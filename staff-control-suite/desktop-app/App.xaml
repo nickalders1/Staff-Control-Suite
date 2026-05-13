@@ -9,6 +9,11 @@
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml" />
                 <ResourceDictionary Source="Resources/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Runtime-overridable accent brushes (updated by AppThemeService) -->
+            <SolidColorBrush x:Key="NavHighlightBrush"    Color="#2a2a4a"/>
+            <SolidColorBrush x:Key="AccentBrush"          Color="#89b4fa"/>
+            <SolidColorBrush x:Key="AccentGradientBrush"  Color="#89b4fa"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

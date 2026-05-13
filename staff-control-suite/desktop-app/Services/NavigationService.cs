@@ -69,4 +69,23 @@ public class NavigationService
             _shellView?.NavigateTo(viewName);
         });
     }
+
+    public void RefreshShellBranding()
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            _shellView?.RefreshBranding();
+        });
+    }
+
+    public void ShowPlayerModeration(string playerName)
+    {
+        Application.Current.Dispatcher.Invoke(() =>
+        {
+            if (_shellView != null)
+            {
+                _shellView.ShowPlayerModeration(playerName);
+            }
+        });
+    }
 }

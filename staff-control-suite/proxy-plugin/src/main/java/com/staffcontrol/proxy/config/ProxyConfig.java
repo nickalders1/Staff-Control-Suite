@@ -22,9 +22,16 @@ public class ProxyConfig {
     private String databasePath = "staffcontrol.db";
     private int sessionExpiryHours = 24;
 
+    private String brandingAppTitle = "Staff Control";
+    private String brandingNetworkName = "My Network";
+    private String brandingLogoFile = "logo.png";
+    private String brandingAccentColor = "#7AA2FF";
+
     public ProxyConfig(Path dataDirectory) {
         this.dataDirectory = dataDirectory;
     }
+
+    public Path getDataDirectory() { return dataDirectory; }
 
     public void load() throws IOException {
         Path configFile = dataDirectory.resolve("config.yml");
@@ -61,6 +68,15 @@ public class ProxyConfig {
                     for (Object ip : (List<?>) ips) {
                         allowedIps.add(String.valueOf(ip));
                     }
+                }
+                Object brandingSection = data.get("branding");
+                if (brandingSection instanceof Map<?, ?> bm) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> b = (Map<String, Object>) bm;
+                    brandingAppTitle   = getString(b, "appTitle",    "Staff Control");
+                    brandingNetworkName = getString(b, "networkName", "My Network");
+                    brandingLogoFile   = getString(b, "logoFile",    "logo.png");
+                    brandingAccentColor = getString(b, "accentColor", "#7AA2FF");
                 }
             }
         }
@@ -106,6 +122,13 @@ public class ProxyConfig {
         data.put("databasePath", databasePath);
         data.put("sessionExpiryHours", sessionExpiryHours);
 
+        Map<String, Object> branding = new LinkedHashMap<>();
+        branding.put("appTitle",    brandingAppTitle);
+        branding.put("networkName", brandingNetworkName);
+        branding.put("logoFile",    brandingLogoFile);
+        branding.put("accentColor", brandingAccentColor);
+        data.put("branding", branding);
+
         try (Writer writer = Files.newBufferedWriter(configFile)) {
             yaml.dump(data, writer);
         }
@@ -119,8 +142,7 @@ public class ProxyConfig {
 
     private String getString(Map<String, Object> map, String key, String def) {
         Object val = map.get(key);
-        if (val != null) return String.valueOf(val);
-        return def;
+        return (val != null && !"null".equals(String.valueOf(val))) ? String.valueOf(val) : def;
     }
 
     public int getApiPort() { return apiPort; }
@@ -142,4 +164,14 @@ public class ProxyConfig {
     public void setDatabaseType(String databaseType) { this.databaseType = databaseType; }
     public void setDatabasePath(String databasePath) { this.databasePath = databasePath; }
     public void setSessionExpiryHours(int sessionExpiryHours) { this.sessionExpiryHours = sessionExpiryHours; }
+
+    public String getBrandingAppTitle()    { return brandingAppTitle; }
+    public String getBrandingNetworkName() { return brandingNetworkName; }
+    public String getBrandingLogoFile()    { return brandingLogoFile; }
+    public String getBrandingAccentColor() { return brandingAccentColor; }
+
+    public void setBrandingAppTitle(String v)    { this.brandingAppTitle = v; }
+    public void setBrandingNetworkName(String v) { this.brandingNetworkName = v; }
+    public void setBrandingLogoFile(String v)    { this.brandingLogoFile = v; }
+    public void setBrandingAccentColor(String v) { this.brandingAccentColor = v; }
 }

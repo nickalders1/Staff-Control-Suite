@@ -1,0 +1,28 @@
+# ---- .NET / C# ----
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+.idea/
+
+# ---- Java / Maven ----
+target/
+*.class
+*.jar
+!proxy-plugin/libs/*.jar
+
+# ---- Installer output ----
+installer/dist/
+installer/AppIcon.ico
+
+# ---- Secrets / local config ----
+*.pfx
+appsettings.local.json
+config.local.yml
+
+# ---- OS ----
+Thumbs.db
+.DS_Store
+desktop.ini

@@ -100,9 +100,10 @@ public partial class UsersRolesViewModel : ObservableObject
             IsLoadingUsers = true;
             try
             {
+                var role = Roles.FirstOrDefault(r => r.Name == roleName);
                 await App.WebSocketService.SendRequestAsync(
                     MessageTypes.UsersCreate,
-                    new { username, password, roleName },
+                    new { username, password, roleId = role?.Id ?? 0 },
                     App.AuthService.SessionToken);
                 await LoadUsersAsync();
             }
@@ -126,9 +127,10 @@ public partial class UsersRolesViewModel : ObservableObject
             IsLoadingUsers = true;
             try
             {
+                var role = Roles.FirstOrDefault(r => r.Name == roleName);
                 await App.WebSocketService.SendRequestAsync(
                     MessageTypes.UsersUpdate,
-                    new { id = user.Id, username, roleName },
+                    new { userId = user.Id, username, roleId = role?.Id ?? 0 },
                     App.AuthService.SessionToken);
                 await LoadUsersAsync();
             }
@@ -200,7 +202,7 @@ public partial class UsersRolesViewModel : ObservableObject
             {
                 await App.WebSocketService.SendRequestAsync(
                     MessageTypes.RolesUpdate,
-                    new { id = role.Id, displayName = updated.DisplayName, permissions = updated.Permissions },
+                    new { roleId = role.Id, displayName = updated.DisplayName, permissions = updated.Permissions },
                     App.AuthService.SessionToken);
                 await LoadRolesAsync();
             }

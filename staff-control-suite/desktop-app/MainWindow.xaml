@@ -10,9 +10,8 @@
         TextElement.Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
         TextElement.FontFamily="{DynamicResource MaterialDesignFont}"
         TextOptions.TextFormattingMode="Ideal"
-        TextOptions.TextRenderingMode="Auto"
-        md:DialogHost.DialogBackground="#2a2a3e">
-    <md:DialogHost Identifier="RootDialogHost" CloseOnClickAway="True">
+        TextOptions.TextRenderingMode="Auto">
+    <md:DialogHost Identifier="RootDialogHost" CloseOnClickAway="True" DialogBackground="#2a2a3e">
         <ContentControl x:Name="MainContent" />
     </md:DialogHost>
 </Window>

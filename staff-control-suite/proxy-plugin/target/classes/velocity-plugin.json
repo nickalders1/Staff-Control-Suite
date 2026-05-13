@@ -1,1 +1,1 @@
-{"id":"staffcontrolproxy","name":"Staff Control Proxy","version":"1.0.0","description":"Central gateway for Staff Control Suite","authors":["StaffControl"],"dependencies":[],"main":"com.staffcontrol.proxy.StaffControlProxy"}
+{"id":"staffcontrolproxy","name":"Staff Control Proxy","version":"1.1.0","description":"Central gateway for Staff Control Suite","authors":["StaffControl"],"dependencies":[],"main":"com.staffcontrol.proxy.StaffControlProxy"}

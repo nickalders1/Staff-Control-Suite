@@ -9,28 +9,18 @@ public class ClientSession {
 
     private final long userId;
     private final String username;
+    private final String roleName;
     private final Set<String> permissions;
     private final String token;
     private final Set<String> subscribedServers;
     private final WebSocket connection;
     private final String ipAddress;
 
-    // All 15 known permission nodes — owning all means owner-level
-    private static final Set<String> ALL_PERMISSIONS = Set.of(
-        "console.view", "console.command",
-        "players.view", "players.details",
-        "players.punishments.view", "players.punishments.create",
-        "servers.view", "servers.manage",
-        "users.view", "users.manage",
-        "roles.view", "roles.manage",
-        "settings.view", "settings.manage",
-        "audit.view"
-    );
-
-    public ClientSession(long userId, String username, Set<String> permissions,
+    public ClientSession(long userId, String username, String roleName, Set<String> permissions,
                          String token, WebSocket conn, String ipAddress) {
         this.userId = userId;
         this.username = username;
+        this.roleName = roleName;
         this.permissions = permissions;
         this.token = token;
         this.connection = conn;
@@ -38,12 +28,12 @@ public class ClientSession {
         this.subscribedServers = ConcurrentHashMap.newKeySet();
     }
 
-    public boolean hasPermission(String node) {
-        return permissions != null && permissions.contains(node);
+    public boolean isOwner() {
+        return "owner".equals(roleName);
     }
 
-    public boolean isOwner() {
-        return permissions != null && permissions.containsAll(ALL_PERMISSIONS);
+    public boolean hasPermission(String node) {
+        return isOwner() || (permissions != null && permissions.contains(node));
     }
 
     public void subscribe(String serverId) {
@@ -60,6 +50,7 @@ public class ClientSession {
 
     public long getUserId() { return userId; }
     public String getUsername() { return username; }
+    public String getRoleName() { return roleName; }
     public Set<String> getPermissions() { return permissions; }
     public String getToken() { return token; }
     public Set<String> getSubscribedServers() { return subscribedServers; }

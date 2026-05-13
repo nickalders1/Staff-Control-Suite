@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls;
 using StaffControlSuite.ViewModels;
 
@@ -26,33 +27,40 @@ public partial class ShellView : UserControl
     {
         _viewModel.CurrentViewTitle = viewName switch
         {
-            "Overview"      => "Overview",
-            "Servers"       => "Servers",
-            "Console"       => "Console",
-            "Players"       => "Players",
-            "UsersRoles"    => "Users & Roles",
-            "Settings"      => "Settings",
-            "AuditLogs"     => "Audit Logs",
-            "PlayerDetails" => "Player Details",
-            _               => viewName
+            "Overview"         => "Overview",
+            "Servers"          => "Servers",
+            "Console"          => "Console",
+            "Players"          => "Players",
+            "UsersRoles"       => "Users & Roles",
+            "Settings"         => "Settings",
+            "AuditLogs"        => "Audit Logs",
+            "Moderation"       => "Moderation",
+            "PlayerModeration" => "Player Moderation",
+            "PresetManager"    => "Preset Manager",
+            "PlayerDetails"    => "Player Details",
+            _                  => viewName
         };
 
         UIElement? view = viewName switch
         {
-            "Overview"   => new OverviewView(),
-            "Servers"    => new ServersView(),
-            "Console"    => new ConsoleView(),
-            "Players"    => new PlayersView(),
-            "UsersRoles" => new UsersRolesView(),
-            "Settings"   => new SettingsView(),
-            "AuditLogs"  => new AuditLogsView(),
-            _            => new OverviewView()
+            "Overview"         => new OverviewView(),
+            "Servers"          => new ServersView(),
+            "Console"          => new ConsoleView(),
+            "Players"          => new PlayersView(),
+            "UsersRoles"       => new UsersRolesView(),
+            "Settings"         => new SettingsView(),
+            "AuditLogs"        => new AuditLogsView(),
+            "Moderation"       => new ModerationDashboardView(),
+            "PlayerModeration" => new PlayerModerationView(),
+            "PresetManager"    => new PresetManagerView(),
+            _                  => new OverviewView()
         };
 
         ContentArea.Content = view;
 
         // Sync selection in sidebar (only for known top-level views)
-        if (viewName != "PlayerDetails")
+        var skipSync = new HashSet<string> { "PlayerDetails", "PlayerModeration", "PresetManager" };
+        if (!skipSync.Contains(viewName))
         {
             foreach (ListBoxItem item in NavListBox.Items)
             {
@@ -70,4 +78,12 @@ public partial class ShellView : UserControl
         _viewModel.CurrentViewTitle = "Player Details";
         ContentArea.Content = new PlayerDetailsView(uuid);
     }
+
+    public void ShowPlayerModeration(string playerName)
+    {
+        _viewModel.CurrentViewTitle = "Player Moderation";
+        ContentArea.Content = new PlayerModerationView(playerName);
+    }
+
+    public void RefreshBranding() => _viewModel.RefreshBranding();
 }

@@ -26,11 +26,29 @@ public static class MessageTypes
     public const string RolesUpdate = "roles.update";
     public const string RolesDelete = "roles.delete";
     public const string AuditList = "audit.list";
+    public const string AgentsList = "agents.list";
+    public const string BrandingGet = "branding.get";
 
     public const string EventConsoleLine = "event.console.line";
     public const string EventServerStatus = "event.server.status";
     public const string EventPlayerUpdate = "event.player.update";
+    public const string EventAgentStatus = "event.agent.status";
     public const string Response = "response";
+
+    public const string ModerationPunish        = "moderation.punish";
+    public const string ModerationHistory       = "moderation.history";
+    public const string ModerationActive        = "moderation.active";
+    public const string ModerationRevoke        = "moderation.revoke";
+    public const string ModerationNotesList     = "moderation.notes.list";
+    public const string ModerationNotesCreate   = "moderation.notes.create";
+    public const string ModerationPresetsList   = "moderation.presets.list";
+    public const string ModerationPresetsCreate = "moderation.presets.create";
+    public const string ModerationPresetsUpdate = "moderation.presets.update";
+    public const string ModerationPresetsDelete = "moderation.presets.delete";
+    public const string ModerationCalculate     = "moderation.calculate";
+    public const string ModerationDashboard     = "moderation.dashboard";
+    public const string EventPunishmentCreated  = "event.punishment.created";
+    public const string EventPunishmentRevoked  = "event.punishment.revoked";
 }
 
 public class WsMessage

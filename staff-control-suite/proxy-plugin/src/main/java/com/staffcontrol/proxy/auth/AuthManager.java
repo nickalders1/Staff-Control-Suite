@@ -6,8 +6,11 @@ import com.staffcontrol.proxy.database.DatabaseManager;
 
 import java.sql.SQLException;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class AuthManager {
+
+    private static final Logger log = Logger.getLogger(AuthManager.class.getName());
 
     private final DatabaseManager database;
     private final ProxyConfig config;
@@ -163,7 +166,8 @@ public class AuthManager {
             return login(username, plainPassword, "localhost");
 
         } catch (SQLException e) {
-            return LoginResult.failure("DATABASE_ERROR");
+            log.severe("[AuthManager] createOwner SQL error: " + e.getMessage() + " | SQLState: " + e.getSQLState());
+            return LoginResult.failure("DATABASE_ERROR: " + e.getMessage());
         }
     }
 

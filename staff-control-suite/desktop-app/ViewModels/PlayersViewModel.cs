@@ -1,58 +1,51 @@
 using System.Collections.ObjectModel;
-using System.Text.Json;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MaterialDesignThemes.Wpf;
 using StaffControlSuite.Models;
 using StaffControlSuite.Protocol;
+using StaffControlSuite.Services;
+using StaffControlSuite.Views.Dialogs;
 
 namespace StaffControlSuite.ViewModels;
 
 public partial class PlayersViewModel : ObservableObject
 {
-    private List<PlayerInfo> _allPlayers = new();
+    private readonly PlayerCacheService _playerCache;
+    private List<PlayerInfo> _snapshot = new();
 
     public ObservableCollection<PlayerInfo> Players { get; } = new();
     public ObservableCollection<string> ServerFilter { get; } = new();
 
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private int _filteredCount;
+    [ObservableProperty] private int _networkTotal;
+
+    public bool CanPunish => App.AuthService.HasPermission("players.punishments.create") || App.AuthService.IsOwner();
 
     private string _searchText = "";
     public string SearchText
     {
         get => _searchText;
-        set
-        {
-            if (SetProperty(ref _searchText, value))
-                ApplyFilter();
-        }
+        set { if (SetProperty(ref _searchText, value)) ApplyFilter(); }
     }
 
     private string? _selectedServerFilter;
     public string? SelectedServerFilter
     {
         get => _selectedServerFilter;
-        set
-        {
-            if (SetProperty(ref _selectedServerFilter, value))
-                ApplyFilter();
-        }
+        set { if (SetProperty(ref _selectedServerFilter, value)) ApplyFilter(); }
     }
 
     public PlayersViewModel()
     {
-        App.WebSocketService.PlayerUpdateReceived += OnPlayerUpdate;
-    }
+        _playerCache = App.PlayerCacheService;
 
-    private void OnPlayerUpdate(string serverId, List<PlayerInfo> players)
-    {
-        Application.Current.Dispatcher.InvokeAsync(() =>
-        {
-            _allPlayers.RemoveAll(p => p.ServerId == serverId);
-            _allPlayers.AddRange(players);
-            ApplyFilter();
-        });
+        // React to real-time changes by refreshing the view from cache
+        App.WebSocketService.PlayerJoinReceived  += (_, _) => RefreshFromCache();
+        App.WebSocketService.PlayerLeftReceived  += (_, _) => RefreshFromCache();
+        App.WebSocketService.PlayerUpdateReceived += (_, _) => RefreshFromCache();
     }
 
     [RelayCommand]
@@ -61,50 +54,63 @@ public partial class PlayersViewModel : ObservableObject
         IsLoading = true;
         try
         {
+            // Request a fresh list from the proxy — the PlayerCacheService will get updated
+            // automatically via the event.player.update push event that the proxy sends.
+            // We also do an explicit request so the cache is warm on first load.
             var result = await App.WebSocketService.SendRequestAsync(
                 MessageTypes.PlayersList, null, App.AuthService.SessionToken);
 
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                _allPlayers.Clear();
-                ServerFilter.Clear();
-                ServerFilter.Add("All Servers");
+                _playerCache.Clear();
 
-                var arr = result.ValueKind == JsonValueKind.Array ? result
-                    : result.TryGetProperty("players", out var pa) ? pa : default;
-
-                if (arr.ValueKind == JsonValueKind.Array)
+                var arr = result.TryGetProperty("players", out var pa) ? pa : default;
+                if (arr.ValueKind == System.Text.Json.JsonValueKind.Array)
                 {
-                    var serverIds = new HashSet<string>();
                     foreach (var p in arr.EnumerateArray())
                     {
                         var player = ParsePlayer(p);
-                        _allPlayers.Add(player);
-                        if (!string.IsNullOrEmpty(player.ServerId))
-                            serverIds.Add(player.ServerId);
+                        // Inject directly into cache via join event path
+                        App.WebSocketService.InjectPlayerJoin(player);
                     }
-                    foreach (var sid in serverIds.OrderBy(s => s))
-                        ServerFilter.Add(sid);
                 }
-
-                SelectedServerFilter = "All Servers";
-                ApplyFilter();
             });
+
+            RefreshFromCache();
         }
-        catch
+        catch { }
+        finally { IsLoading = false; }
+    }
+
+    private void RefreshFromCache()
+    {
+        Application.Current.Dispatcher.InvokeAsync(() =>
         {
-            // Silently handle
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+            _snapshot = _playerCache.GetAll().ToList();
+            NetworkTotal = _snapshot.Count;
+
+            var serverIds = _snapshot.Select(p => p.ServerId)
+                                     .Where(s => !string.IsNullOrEmpty(s))
+                                     .Distinct()
+                                     .OrderBy(s => s)
+                                     .ToList();
+
+            // Rebuild server filter list preserving selection
+            var previous = SelectedServerFilter;
+            ServerFilter.Clear();
+            ServerFilter.Add("All Servers");
+            foreach (var sid in serverIds) ServerFilter.Add(sid);
+
+            SelectedServerFilter = ServerFilter.Contains(previous ?? "") ? previous : "All Servers";
+
+            ApplyFilter();
+        });
     }
 
     private void ApplyFilter()
     {
         Players.Clear();
-        var filtered = _allPlayers.AsEnumerable();
+        var filtered = _snapshot.AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(SearchText))
             filtered = filtered.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
@@ -112,28 +118,33 @@ public partial class PlayersViewModel : ObservableObject
         if (SelectedServerFilter != null && SelectedServerFilter != "All Servers")
             filtered = filtered.Where(p => p.ServerId == SelectedServerFilter);
 
-        foreach (var p in filtered.OrderByDescending(p => p.IsOnline).ThenBy(p => p.Name))
+        foreach (var p in filtered.OrderBy(p => p.Name))
             Players.Add(p);
 
         FilteredCount = Players.Count;
     }
 
-    private static PlayerInfo ParsePlayer(JsonElement p)
+    [RelayCommand]
+    private async Task PunishPlayerAsync(PlayerInfo? player)
     {
-        return new PlayerInfo
-        {
-            Uuid = p.TryGetProperty("uuid", out var u) ? u.GetString() ?? "" : "",
-            Name = p.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "",
-            ServerId = p.TryGetProperty("serverId", out var sid) ? sid.GetString() ?? "" : "",
-            World = p.TryGetProperty("world", out var w) ? w.GetString() ?? "" : "",
-            Gamemode = p.TryGetProperty("gamemode", out var gm) ? gm.GetString() ?? "" : "",
-            Health = p.TryGetProperty("health", out var h) ? h.GetDouble() : 20.0,
-            FoodLevel = p.TryGetProperty("foodLevel", out var fl) ? fl.GetInt32() : 20,
-            Ping = p.TryGetProperty("ping", out var ping) ? ping.GetInt32() : 0,
-            IsOnline = p.TryGetProperty("isOnline", out var io) && io.GetBoolean(),
-            FirstJoined = p.TryGetProperty("firstJoined", out var fj) ? fj.GetInt64() : 0L,
-            LastJoined = p.TryGetProperty("lastJoined", out var lj) ? lj.GetInt64() : 0L,
-            PlaytimeSeconds = p.TryGetProperty("playtimeSeconds", out var pt) ? pt.GetInt64() : 0L,
-        };
+        if (player == null) return;
+        var dialog = new CreatePunishmentDialog(player.Name);
+        await DialogHost.Show(dialog, "RootDialogHost");
     }
+
+    private static PlayerInfo ParsePlayer(System.Text.Json.JsonElement p) => new()
+    {
+        Uuid            = p.TryGetProperty("uuid",            out var u)   ? u.GetString()   ?? "" : "",
+        Name            = p.TryGetProperty("name",            out var n)   ? n.GetString()   ?? "" : "",
+        ServerId        = p.TryGetProperty("serverId",        out var sid) ? sid.GetString() ?? "" : "",
+        World           = p.TryGetProperty("world",           out var w)   ? w.GetString()   ?? "" : "",
+        Gamemode        = p.TryGetProperty("gamemode",        out var gm)  ? gm.GetString()  ?? "" : "",
+        Health          = p.TryGetProperty("health",          out var h)   ? h.GetDouble()        : 20.0,
+        FoodLevel       = p.TryGetProperty("foodLevel",       out var fl)  ? fl.GetInt32()        : 20,
+        Ping            = p.TryGetProperty("ping",            out var pg)  ? pg.GetInt32()        : 0,
+        IsOnline        = p.TryGetProperty("isOnline",        out var io)  && io.GetBoolean(),
+        FirstJoined     = p.TryGetProperty("firstJoined",     out var fj)  ? fj.GetInt64()        : 0L,
+        LastJoined      = p.TryGetProperty("lastJoined",      out var lj)  ? lj.GetInt64()        : 0L,
+        PlaytimeSeconds = p.TryGetProperty("playtimeSeconds", out var pt)  ? pt.GetInt64()        : 0L,
+    };
 }

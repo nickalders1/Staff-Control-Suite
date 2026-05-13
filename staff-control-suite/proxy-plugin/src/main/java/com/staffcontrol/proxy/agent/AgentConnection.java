@@ -14,14 +14,24 @@ public class AgentConnection {
     private String serverType;
     private String host;
     private int port;
+    private static final int PROTOCOL_VERSION = 1;
+
+    private String version;
     private final WebSocket connection;
     private boolean registered;
+    private volatile long lastHeartbeatAt;
     private ServerInfo serverInfo;
+    private volatile long latencyMs = 0;
+    private int reconnectAttempts = 0;
+    private String lastError = null;
+    private long connectTime;
 
     public AgentConnection(WebSocket conn) {
         this.connection = conn;
         this.registered = false;
         this.serverInfo = new ServerInfo();
+        this.lastHeartbeatAt = System.currentTimeMillis();
+        this.connectTime = System.currentTimeMillis();
     }
 
     public void send(String json) {
@@ -39,10 +49,10 @@ public class AgentConnection {
     }
 
     public void updateFromHeartbeat(double tps, double mspt, int onlinePlayers,
-                                     int maxPlayers, long timestamp) {
-        if (serverInfo == null) {
-            serverInfo = new ServerInfo();
-        }
+                                     int maxPlayers, String version, long timestamp) {
+        this.lastHeartbeatAt = timestamp;
+        if (version != null) this.version = version;
+        if (serverInfo == null) serverInfo = new ServerInfo();
         serverInfo.setServerId(serverId);
         serverInfo.setServerName(serverName);
         serverInfo.setServerType(serverType);
@@ -54,6 +64,10 @@ public class AgentConnection {
         serverInfo.setPlayerCount(onlinePlayers);
         serverInfo.setMaxPlayers(maxPlayers);
         serverInfo.setLastHeartbeat(timestamp);
+    }
+
+    public boolean isHeartbeatTimedOut(long timeoutMs) {
+        return registered && (System.currentTimeMillis() - lastHeartbeatAt) > timeoutMs;
     }
 
     public String getServerId() { return serverId; }
@@ -86,11 +100,32 @@ public class AgentConnection {
         if (serverInfo != null) serverInfo.setPort(port);
     }
 
+    public String getVersion() { return version; }
+    public void setVersion(String version) { this.version = version; }
+
     public WebSocket getConnection() { return connection; }
 
     public boolean isRegistered() { return registered; }
     public void setRegistered(boolean registered) { this.registered = registered; }
 
+    public long getLastHeartbeatAt() { return lastHeartbeatAt; }
+    public void setLastHeartbeatAt(long lastHeartbeatAt) { this.lastHeartbeatAt = lastHeartbeatAt; }
+
     public ServerInfo getServerInfo() { return serverInfo; }
     public void setServerInfo(ServerInfo serverInfo) { this.serverInfo = serverInfo; }
+
+    public int getProtocolVersion() { return PROTOCOL_VERSION; }
+
+    public long getLatencyMs() { return latencyMs; }
+    public void setLatencyMs(long latencyMs) { this.latencyMs = latencyMs; }
+
+    public int getReconnectAttempts() { return reconnectAttempts; }
+    public void setReconnectAttempts(int reconnectAttempts) { this.reconnectAttempts = reconnectAttempts; }
+    public void incrementReconnectAttempts() { this.reconnectAttempts++; }
+
+    public String getLastError() { return lastError; }
+    public void setLastError(String lastError) { this.lastError = lastError; }
+
+    public long getConnectTime() { return connectTime; }
+    public void setConnectTime(long connectTime) { this.connectTime = connectTime; }
 }

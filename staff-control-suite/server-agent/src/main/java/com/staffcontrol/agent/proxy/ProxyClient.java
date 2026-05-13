@@ -19,10 +19,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
-/**
- * WebSocket client that connects to the Velocity proxy's AgentWebSocket server.
- * Handles registration, heartbeats, console output streaming, and command execution.
- */
 public class ProxyClient extends WebSocketClient {
 
     private final AgentConfig config;
@@ -66,11 +62,9 @@ public class ProxyClient extends WebSocketClient {
                     String msg = json.has("message") ? json.get("message").getAsString() : "";
                     if (success) {
                         registered.set(true);
-                        plugin.getLogger().info("Registered with proxy as " + config.getServerId()
-                                + ": " + msg);
-                        // Send initial state
+                        plugin.getLogger().info("Registered with proxy as " + config.getServerId() + ": " + msg);
                         sendHeartbeat();
-                        sendPlayersUpdate(plugin.getPlayerInfoCollector().getOnlinePlayers());
+                        sendPlayersUpdate(plugin.getPlayerSyncManager().getOnlinePlayers());
                     } else {
                         plugin.getLogger().warning("Proxy rejected registration: " + msg);
                     }
@@ -80,9 +74,7 @@ public class ProxyClient extends WebSocketClient {
                 case "console.command": {
                     if (json.has("payload")) {
                         JsonObject payload = json.getAsJsonObject("payload");
-                        String command = payload.has("command")
-                                ? payload.get("command").getAsString()
-                                : null;
+                        String command = payload.has("command") ? payload.get("command").getAsString() : null;
                         if (command != null && !command.isBlank()) {
                             plugin.getLogger().info("Received remote command from proxy: " + command);
                             final String finalCommand = command;
@@ -95,12 +87,7 @@ public class ProxyClient extends WebSocketClient {
 
                 case "server.info.request": {
                     sendHeartbeat();
-                    sendPlayersUpdate(plugin.getPlayerInfoCollector().getOnlinePlayers());
-                    break;
-                }
-
-                case "players.request": {
-                    sendPlayersUpdate(plugin.getPlayerInfoCollector().getOnlinePlayers());
+                    sendPlayersUpdate(plugin.getPlayerSyncManager().getOnlinePlayers());
                     break;
                 }
 
@@ -126,13 +113,8 @@ public class ProxyClient extends WebSocketClient {
         plugin.getLogger().warning("WebSocket error: " + ex.getMessage());
     }
 
-    // -------------------------------------------------------------------------
-    // Outbound message senders
-    // -------------------------------------------------------------------------
+    // ---- Outbound senders ----
 
-    /**
-     * Sends the agent.register message with server info.
-     */
     public void sendRegister() {
         JsonObject root = new JsonObject();
         root.addProperty("type", "agent.register");
@@ -144,18 +126,14 @@ public class ProxyClient extends WebSocketClient {
         payload.addProperty("serverType", config.getServerType());
         payload.addProperty("host", config.getProxyHost());
         payload.addProperty("port", Bukkit.getPort());
+        payload.addProperty("version", Bukkit.getMinecraftVersion());
 
         root.add("payload", payload);
         send(root);
     }
 
-    /**
-     * Sends a heartbeat with current TPS, MSPT, and player counts.
-     */
     public void sendHeartbeat() {
-        if (!isOpen()) {
-            return;
-        }
+        if (!isOpen()) return;
         try {
             JsonObject root = new JsonObject();
             root.addProperty("type", "agent.heartbeat");
@@ -167,15 +145,8 @@ public class ProxyClient extends WebSocketClient {
         }
     }
 
-    /**
-     * Sends a single line of console output to the proxy.
-     *
-     * @param line the formatted console line
-     */
     public void sendConsoleOutput(String line) {
-        if (!registered.get() || !isOpen()) {
-            return;
-        }
+        if (!registered.get() || !isOpen()) return;
         try {
             JsonObject root = new JsonObject();
             root.addProperty("type", "console.output");
@@ -187,32 +158,21 @@ public class ProxyClient extends WebSocketClient {
 
             root.add("payload", payload);
             send(root);
-        } catch (Exception e) {
-            // Silently ignore — do not risk infinite recursion by logging here
-        }
+        } catch (Exception ignored) {}
     }
 
-    /**
-     * Sends the players.update message with a list of player info JSON objects.
-     *
-     * @param players list of player JsonObjects
-     */
     public void sendPlayersUpdate(List<JsonObject> players) {
-        if (!registered.get() || !isOpen()) {
-            return;
-        }
+        if (!registered.get() || !isOpen()) return;
         try {
             JsonObject root = new JsonObject();
             root.addProperty("type", "players.update");
             root.addProperty("serverId", config.getServerId());
 
-            JsonObject payload = new JsonObject();
-            JsonArray playersArray = new JsonArray();
-            for (JsonObject playerJson : players) {
-                playersArray.add(playerJson);
-            }
-            payload.add("players", playersArray);
+            JsonArray arr = new JsonArray();
+            for (JsonObject p : players) arr.add(p);
 
+            JsonObject payload = new JsonObject();
+            payload.add("players", arr);
             root.add("payload", payload);
             send(root);
         } catch (Exception e) {
@@ -220,17 +180,41 @@ public class ProxyClient extends WebSocketClient {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Reconnect logic
-    // -------------------------------------------------------------------------
-
-    /**
-     * Schedules a reconnection attempt after the configured delay.
-     */
-    private void scheduleReconnect() {
-        if (reconnecting) {
-            return;
+    public void sendPlayerJoin(JsonObject playerData) {
+        if (!registered.get() || !isOpen()) return;
+        try {
+            JsonObject root = new JsonObject();
+            root.addProperty("type", "agent.player.join");
+            root.addProperty("serverId", config.getServerId());
+            root.add("payload", playerData);
+            send(root);
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to send player join: " + e.getMessage());
         }
+    }
+
+    public void sendPlayerLeave(String uuid, long playtimeSeconds) {
+        if (!registered.get() || !isOpen()) return;
+        try {
+            JsonObject root = new JsonObject();
+            root.addProperty("type", "agent.player.leave");
+            root.addProperty("serverId", config.getServerId());
+
+            JsonObject payload = new JsonObject();
+            payload.addProperty("uuid", uuid);
+            payload.addProperty("playtimeSeconds", playtimeSeconds);
+
+            root.add("payload", payload);
+            send(root);
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to send player leave: " + e.getMessage());
+        }
+    }
+
+    // ---- Reconnect ----
+
+    private void scheduleReconnect() {
+        if (reconnecting) return;
         reconnecting = true;
         int delay = config.getReconnectDelaySeconds();
         plugin.getLogger().info("Scheduling reconnect to proxy in " + delay + " seconds...");
@@ -246,40 +230,20 @@ public class ProxyClient extends WebSocketClient {
         }, delay, TimeUnit.SECONDS);
     }
 
-    /**
-     * Cleanly closes the WebSocket connection and shuts down the reconnect executor.
-     */
     public void disconnect() {
-        reconnecting = true; // Prevent reconnect scheduling on close
+        reconnecting = true;
         registered.set(false);
         try {
-            if (isOpen()) {
-                close();
-            }
-        } catch (Exception e) {
-            plugin.getLogger().warning("Error during disconnect: " + e.getMessage());
-        }
+            if (isOpen()) close();
+        } catch (Exception ignored) {}
         reconnectExecutor.shutdownNow();
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Serialises a JsonObject and sends it over the WebSocket.
-     *
-     * @param json the object to send
-     */
     private void send(JsonObject json) {
         try {
             send(gson.toJson(json));
-        } catch (Exception e) {
-            // Suppress — may be called when connection is not yet ready
-        }
+        } catch (Exception ignored) {}
     }
 
-    public boolean isRegistered() {
-        return registered.get();
-    }
+    public boolean isRegistered() { return registered.get(); }
 }

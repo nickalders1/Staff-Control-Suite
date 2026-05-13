@@ -7,3 +7,9 @@ proxyName: "MyProxy"
 databaseType: sqlite
 databasePath: staffcontrol.db
 sessionExpiryHours: 24
+
+branding:
+  appTitle: "Staff Control"
+  networkName: "My Network"
+  logoFile: "logo.png"
+  accentColor: "#7AA2FF"

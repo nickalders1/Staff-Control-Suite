@@ -19,17 +19,41 @@
 
         <!-- Toolbar -->
         <Grid Grid.Row="0" Margin="0,0,0,16">
-            <StackPanel Orientation="Horizontal">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <WrapPanel Orientation="Horizontal" Grid.Column="0" VerticalAlignment="Center">
+                <!-- Action filter -->
                 <ComboBox ItemsSource="{Binding ActionFilters}"
                           SelectedItem="{Binding SelectedAction}"
                           md:HintAssist.Hint="Filter by action"
                           Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                          Width="200" Foreground="White"
-                          Margin="0,0,12,0"/>
+                          Width="185" Foreground="White"
+                          Margin="0,0,10,0"/>
 
+                <!-- Username filter -->
+                <TextBox Text="{Binding FilterUsername, UpdateSourceTrigger=PropertyChanged}"
+                         md:HintAssist.Hint="Filter by user"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                         Width="150" Foreground="White"
+                         md:TextFieldAssist.HasClearButton="True"
+                         Margin="0,0,10,0"/>
+
+                <!-- Search -->
+                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         md:HintAssist.Hint="Search…"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                         Width="180" Foreground="White"
+                         md:TextFieldAssist.HasClearButton="True"
+                         Margin="0,0,10,0"/>
+
+                <!-- Refresh -->
                 <Button Command="{Binding LoadCommand}"
                         Style="{StaticResource MaterialDesignOutlinedButton}"
-                        Foreground="#89b4fa" BorderBrush="#89b4fa">
+                        Foreground="#89b4fa" BorderBrush="#89b4fa"
+                        Margin="0,0,10,0">
                     <StackPanel Orientation="Horizontal">
                         <md:PackIcon Kind="Refresh" Width="16" Height="16"
                                      VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -38,12 +62,12 @@
                 </Button>
 
                 <ProgressBar IsIndeterminate="True" Width="60" Height="4"
-                             Margin="12,0,0,0"
+                             VerticalAlignment="Center"
                              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
                              Foreground="#89b4fa"/>
-            </StackPanel>
+            </WrapPanel>
 
-            <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
+            <TextBlock Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center"
                        Foreground="#6c7086" FontSize="12">
                 <Run Text="{Binding Total}"/>
                 <Run Text=" total entries"/>
@@ -66,13 +90,14 @@
                   ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}">
 
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Timestamp" Binding="{Binding TimestampDisplay}" Width="150">
+                <DataGridTextColumn Header="Timestamp" Binding="{Binding TimestampDisplay}" Width="160">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
                             <Setter Property="Margin" Value="8,0"/>
                             <Setter Property="Foreground" Value="#6c7086"/>
                             <Setter Property="FontFamily" Value="Consolas"/>
+                            <Setter Property="ToolTip" Value="{Binding TimestampDisplay}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
@@ -83,47 +108,59 @@
                             <Setter Property="VerticalAlignment" Value="Center"/>
                             <Setter Property="Margin" Value="8,0"/>
                             <Setter Property="Foreground" Value="#89b4fa"/>
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding Username}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="160">
+                <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="200">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
                             <Setter Property="Margin" Value="8,0"/>
                             <Setter Property="Foreground" Value="#f9e2af"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-
-                <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="130">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
-
-                <DataGridTextColumn Header="Details" Binding="{Binding Details}" Width="*">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#6c7086"/>
                             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding Action}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Header="IP Address" Binding="{Binding IpAddress}" Width="120">
+                <DataGridTextColumn Header="Target" Binding="{Binding Target}" Width="140">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                            <Setter Property="Margin" Value="8,0"/>
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding Target}"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+
+                <!-- Details — expands to fill remaining space, full text in tooltip -->
+                <DataGridTemplateColumn Header="Details" Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Details}"
+                                       VerticalAlignment="Center"
+                                       Margin="8,0"
+                                       Foreground="#6c7086"
+                                       FontSize="12"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Details}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTextColumn Header="IP Address" Binding="{Binding IpAddress}" Width="135">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
                             <Setter Property="Margin" Value="8,0"/>
                             <Setter Property="Foreground" Value="#45475a"/>
                             <Setter Property="FontFamily" Value="Consolas"/>
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding IpAddress}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>

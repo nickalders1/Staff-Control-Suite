@@ -41,23 +41,57 @@ public partial class AuditLogsViewModel : ObservableObject
         }
     }
 
+    private string _searchText = "";
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            if (SetProperty(ref _searchText, value))
+            {
+                CurrentPage = 1;
+                _ = LoadAsync();
+            }
+        }
+    }
+
+    private string _filterUsername = "";
+    public string FilterUsername
+    {
+        get => _filterUsername;
+        set
+        {
+            if (SetProperty(ref _filterUsername, value))
+            {
+                CurrentPage = 1;
+                _ = LoadAsync();
+            }
+        }
+    }
+
     public bool CanGoPrevious => CurrentPage > 1;
     public bool CanGoNext => CurrentPage < TotalPages;
 
     public AuditLogsViewModel()
     {
         ActionFilters.Add("All Actions");
-        ActionFilters.Add("auth.login");
-        ActionFilters.Add("auth.logout");
-        ActionFilters.Add("users.create");
-        ActionFilters.Add("users.update");
-        ActionFilters.Add("users.delete");
-        ActionFilters.Add("roles.create");
-        ActionFilters.Add("roles.update");
-        ActionFilters.Add("roles.delete");
-        ActionFilters.Add("servers.add");
-        ActionFilters.Add("servers.remove");
-        ActionFilters.Add("console.command");
+        ActionFilters.Add("AUTH_LOGIN");
+        ActionFilters.Add("AUTH_LOGOUT");
+        ActionFilters.Add("AUTH_LOGIN_FAILED");
+        ActionFilters.Add("CONSOLE_COMMAND");
+        ActionFilters.Add("SERVER_ADD");
+        ActionFilters.Add("SERVER_REMOVE");
+        ActionFilters.Add("SERVER_UPDATE");
+        ActionFilters.Add("USER_CREATE");
+        ActionFilters.Add("USER_UPDATE");
+        ActionFilters.Add("USER_DELETE");
+        ActionFilters.Add("ROLE_CREATE");
+        ActionFilters.Add("ROLE_UPDATE");
+        ActionFilters.Add("ROLE_DELETE");
+        ActionFilters.Add("SETUP_CREATE_OWNER");
+        ActionFilters.Add("AGENT_CONNECT");
+        ActionFilters.Add("AGENT_DISCONNECT");
+        ActionFilters.Add("AGENT_TIMEOUT");
 
         _selectedAction = "All Actions";
     }
@@ -68,32 +102,28 @@ public partial class AuditLogsViewModel : ObservableObject
         IsLoading = true;
         try
         {
-            var action = SelectedAction == "All Actions" ? null : SelectedAction;
+            var action   = SelectedAction == "All Actions" ? null : SelectedAction;
+            var username = string.IsNullOrWhiteSpace(FilterUsername) ? null : FilterUsername.Trim();
+            var search   = string.IsNullOrWhiteSpace(SearchText) ? null : SearchText.Trim();
+
             var result = await App.WebSocketService.SendRequestAsync(
                 MessageTypes.AuditList,
-                new { page = CurrentPage, pageSize = PageSize, action },
+                new { page = CurrentPage, pageSize = PageSize, action, username, search },
                 App.AuthService.SessionToken);
 
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 Logs.Clear();
 
-                // Try to get logs array from various response shapes
                 JsonElement logsArr = default;
                 if (result.ValueKind == JsonValueKind.Array)
-                {
                     logsArr = result;
-                }
                 else if (result.TryGetProperty("logs", out var la))
-                {
                     logsArr = la;
-                }
 
                 if (logsArr.ValueKind == JsonValueKind.Array)
-                {
                     foreach (var log in logsArr.EnumerateArray())
                         Logs.Add(ParseLog(log));
-                }
 
                 if (result.TryGetProperty("total", out var tot))
                     Total = tot.GetInt32();
@@ -106,10 +136,7 @@ public partial class AuditLogsViewModel : ObservableObject
                     TotalPages = Math.Max(1, (int)Math.Ceiling((double)Total / PageSize));
             });
         }
-        catch
-        {
-            // Silently handle
-        }
+        catch { }
         finally
         {
             IsLoading = false;
@@ -136,18 +163,15 @@ public partial class AuditLogsViewModel : ObservableObject
         }
     }
 
-    private static AuditLog ParseLog(JsonElement log)
+    private static AuditLog ParseLog(JsonElement log) => new()
     {
-        return new AuditLog
-        {
-            Id = log.TryGetProperty("id", out var id) ? id.GetInt64() : 0,
-            UserId = log.TryGetProperty("userId", out var uid) ? uid.GetInt64() : 0,
-            Username = log.TryGetProperty("username", out var un) ? un.GetString() ?? "" : "",
-            Action = log.TryGetProperty("action", out var a) ? a.GetString() ?? "" : "",
-            Target = log.TryGetProperty("target", out var t) ? t.GetString() ?? "" : "",
-            Details = log.TryGetProperty("details", out var d) ? d.GetString() ?? "" : "",
-            IpAddress = log.TryGetProperty("ipAddress", out var ip) ? ip.GetString() ?? "" : "",
-            Timestamp = log.TryGetProperty("timestamp", out var ts) ? ts.GetInt64() : 0L,
-        };
-    }
+        Id        = log.TryGetProperty("id",        out var id)  ? id.GetInt64()        : 0,
+        UserId    = log.TryGetProperty("userId",    out var uid) ? uid.GetInt64()       : 0,
+        Username  = log.TryGetProperty("username",  out var un)  ? un.GetString()  ?? "" : "",
+        Action    = log.TryGetProperty("action",    out var a)   ? a.GetString()   ?? "" : "",
+        Target    = log.TryGetProperty("target",    out var t)   ? t.GetString()   ?? "" : "",
+        Details   = log.TryGetProperty("details",   out var d)   ? d.GetString()   ?? "" : "",
+        IpAddress = log.TryGetProperty("ipAddress", out var ip)  ? ip.GetString()  ?? "" : "",
+        Timestamp = log.TryGetProperty("timestamp", out var ts)  ? ts.GetInt64()        : 0L,
+    };
 }

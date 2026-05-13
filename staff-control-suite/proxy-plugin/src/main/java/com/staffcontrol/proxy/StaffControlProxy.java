@@ -9,6 +9,9 @@ import com.staffcontrol.proxy.audit.AuditLogger;
 import com.staffcontrol.proxy.auth.AuthManager;
 import com.staffcontrol.proxy.config.ProxyConfig;
 import com.staffcontrol.proxy.database.DatabaseManager;
+import com.staffcontrol.proxy.moderation.ModerationManager;
+import com.staffcontrol.proxy.permission.PermissionCache;
+import com.staffcontrol.proxy.player.PlayerManager;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
@@ -22,7 +25,7 @@ import java.util.logging.Logger;
 @Plugin(
     id = "staffcontrolproxy",
     name = "Staff Control Proxy",
-    version = "1.0.0",
+    version = "1.1.0",
     description = "Central gateway for Staff Control Suite",
     authors = {"StaffControl"}
 )
@@ -37,6 +40,9 @@ public class StaffControlProxy {
     private AuthManager authManager;
     private AgentManager agentManager;
     private AuditLogger auditLogger;
+    private PlayerManager playerManager;
+    private PermissionCache permissionCache;
+    private ModerationManager moderationManager;
     private AppWebSocketServer appWebSocketServer;
     private AgentWebSocketServer agentWebSocketServer;
 
@@ -49,9 +55,8 @@ public class StaffControlProxy {
 
     @Subscribe
     public void onProxyInitialize(ProxyInitializeEvent event) {
-        logger.info("=== Staff Control Proxy starting up ===");
+        logger.info("=== Staff Control Proxy v1.1.0 starting ===");
 
-        // Load configuration
         config = new ProxyConfig(dataDirectory);
         try {
             config.load();
@@ -62,7 +67,6 @@ public class StaffControlProxy {
             return;
         }
 
-        // Initialise database
         database = new DatabaseManager(dataDirectory, config);
         try {
             database.initialize();
@@ -72,25 +76,47 @@ public class StaffControlProxy {
             return;
         }
 
-        // Initialise managers
-        authManager  = new AuthManager(database, config);
-        agentManager = new AgentManager();
-        auditLogger  = new AuditLogger(database);
+        // Seed default punishment presets (no-op if already seeded)
+        try {
+            database.seedDefaultPresets();
+            logger.info("Punishment presets ready.");
+        } catch (Exception e) {
+            logger.warning("Failed to seed default presets: " + e.getMessage());
+        }
 
-        // Build App WebSocket server
+        authManager      = new AuthManager(database, config);
+        auditLogger      = new AuditLogger(database);
+        playerManager    = new PlayerManager(database, logger);
+        permissionCache  = new PermissionCache(database);
+        moderationManager = new ModerationManager(database, logger);
+
+        agentManager = new AgentManager();
+        agentManager.setLogger(logger);
+
         appWebSocketServer = new AppWebSocketServer(
                 config, database, authManager, agentManager, auditLogger, logger);
 
-        // Build and wire message handler
         AppMessageHandler messageHandler = new AppMessageHandler(
-                database, authManager, agentManager, auditLogger, appWebSocketServer, logger);
+                database, authManager, agentManager, auditLogger,
+                appWebSocketServer, playerManager, permissionCache, config, logger,
+                moderationManager);
         appWebSocketServer.setMessageHandler(messageHandler);
 
-        // Build Agent WebSocket server
         agentWebSocketServer = new AgentWebSocketServer(
-                config, agentManager, appWebSocketServer, database, logger);
+                config, agentManager, appWebSocketServer, database, playerManager, logger);
 
-        // Start both WebSocket servers
+        agentManager.setTimeoutHandler(agent -> {
+            String serverId = agent.getServerId();
+            logger.warning("[StaffControl] Agent timed out: " + serverId);
+            auditLogger.logAgentTimeout(serverId);
+            agentManager.removeAgent(serverId);
+            java.util.List<String> removed = playerManager.agentDisconnected(serverId);
+            for (String uuid : removed) {
+                appWebSocketServer.broadcastPlayerLeft(uuid, serverId);
+            }
+            appWebSocketServer.broadcastServerStatus(serverId, false, 0, 0.0, 0.0, System.currentTimeMillis());
+        });
+
         try {
             appWebSocketServer.start();
             logger.info("App WebSocket server started on port " + config.getApiPort());
@@ -105,8 +131,10 @@ public class StaffControlProxy {
             logger.severe("Failed to start Agent WebSocket server: " + e.getMessage());
         }
 
-        logger.info("=== Staff Control Proxy started successfully ===");
+        agentManager.startTimeoutMonitor();
+        logger.info("Agent heartbeat monitor started (timeout=30s, check=15s).");
 
+        logger.info("=== Staff Control Proxy started successfully ===");
         if (!authManager.ownerExists()) {
             logger.info("No owner account detected. Connect via the app to complete setup.");
         }
@@ -116,24 +144,14 @@ public class StaffControlProxy {
     public void onProxyShutdown(ProxyShutdownEvent event) {
         logger.info("=== Staff Control Proxy shutting down ===");
 
+        agentManager.shutdown();
+
         if (appWebSocketServer != null) {
-            try {
-                appWebSocketServer.stop(1000);
-                logger.info("App WebSocket server stopped.");
-            } catch (Exception e) {
-                logger.warning("Error stopping App WebSocket server: " + e.getMessage());
-            }
+            try { appWebSocketServer.stop(1000); } catch (Exception ignored) {}
         }
-
         if (agentWebSocketServer != null) {
-            try {
-                agentWebSocketServer.stop(1000);
-                logger.info("Agent WebSocket server stopped.");
-            } catch (Exception e) {
-                logger.warning("Error stopping Agent WebSocket server: " + e.getMessage());
-            }
+            try { agentWebSocketServer.stop(1000); } catch (Exception ignored) {}
         }
-
         if (database != null) {
             database.close();
             logger.info("Database connection closed.");
@@ -142,14 +160,17 @@ public class StaffControlProxy {
         logger.info("=== Staff Control Proxy shut down ===");
     }
 
-    public ProxyServer getServer() { return server; }
-    public Logger getLogger() { return logger; }
-    public Path getDataDirectory() { return dataDirectory; }
-    public ProxyConfig getConfig() { return config; }
-    public DatabaseManager getDatabase() { return database; }
-    public AuthManager getAuthManager() { return authManager; }
-    public AgentManager getAgentManager() { return agentManager; }
-    public AuditLogger getAuditLogger() { return auditLogger; }
-    public AppWebSocketServer getAppWebSocketServer() { return appWebSocketServer; }
-    public AgentWebSocketServer getAgentWebSocketServer() { return agentWebSocketServer; }
+    public ProxyServer getServer()                       { return server; }
+    public Logger getLogger()                            { return logger; }
+    public Path getDataDirectory()                       { return dataDirectory; }
+    public ProxyConfig getConfig()                       { return config; }
+    public DatabaseManager getDatabase()                 { return database; }
+    public AuthManager getAuthManager()                  { return authManager; }
+    public AgentManager getAgentManager()               { return agentManager; }
+    public AuditLogger getAuditLogger()                  { return auditLogger; }
+    public PlayerManager getPlayerManager()              { return playerManager; }
+    public PermissionCache getPermissionCache()          { return permissionCache; }
+    public ModerationManager getModerationManager()      { return moderationManager; }
+    public AppWebSocketServer getAppWebSocketServer()    { return appWebSocketServer; }
+    public AgentWebSocketServer getAgentWebSocketServer(){ return agentWebSocketServer; }
 }

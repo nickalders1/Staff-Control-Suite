@@ -1,3 +1,4 @@
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace StaffControlSuite.Models;
@@ -93,7 +94,11 @@ public class ServerInfo : ObservableObject
     public double Mspt
     {
         get => _mspt;
-        set => SetProperty(ref _mspt, value);
+        set
+        {
+            if (SetProperty(ref _mspt, value))
+                OnPropertyChanged(nameof(MsptDisplay));
+        }
     }
 
     public long LastHeartbeat
@@ -132,7 +137,9 @@ public class ServerInfo : ObservableObject
 
     public string StatusDisplay => IsOnline ? "Online" : "Offline";
 
-    public string TpsDisplay => $"{Tps:F1} TPS";
+    public string TpsDisplay => Tps.ToString("F1", CultureInfo.InvariantCulture);
+
+    public string MsptDisplay => $"{Mspt.ToString("F1", CultureInfo.InvariantCulture)}ms";
 
     public string PlayerDisplay => $"{PlayerCount}/{MaxPlayers}";
 

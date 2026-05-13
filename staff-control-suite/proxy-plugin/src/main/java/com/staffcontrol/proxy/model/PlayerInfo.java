@@ -40,36 +40,40 @@ public class PlayerInfo {
 
     public static PlayerInfo fromDatabase(Map<String, Object> row) {
         PlayerInfo p = new PlayerInfo();
-        p.uuid = getString(row, "uuid");
-        p.name = getString(row, "name");
-        p.serverId = getString(row, "server_id");
-        p.isOnline = getInt(row, "is_online") == 1;
-        p.firstJoined = getLong(row, "first_joined");
-        p.lastJoined = getLong(row, "last_seen");
+        p.uuid            = getString(row, "uuid");
+        p.name            = getString(row, "name");
+        p.serverId        = getString(row, "server_id");
+        p.isOnline        = getInt(row, "is_online") == 1;
+        p.firstJoined     = getLong(row, "first_joined");
+        p.lastJoined      = getLong(row, "last_joined_at") > 0
+                            ? getLong(row, "last_joined_at") : getLong(row, "last_seen");
         p.playtimeSeconds = getLong(row, "playtime_seconds");
-        p.world = null;
-        p.gamemode = null;
-        p.health = 20.0;
-        p.foodLevel = 20;
-        p.ping = 0;
+        p.ping            = getInt(row, "ping");
+        p.health          = getDouble(row, "health", 20.0);
+        p.foodLevel       = getInt(row, "food_level") > 0 ? getInt(row, "food_level") : 20;
+        p.gamemode        = getString(row, "gamemode");
+        p.world           = getString(row, "world");
         return p;
     }
 
     private static String getString(Map<String, Object> map, String key) {
         Object val = map.get(key);
-        return val != null ? String.valueOf(val) : null;
+        return (val != null && !"null".equals(String.valueOf(val))) ? String.valueOf(val) : null;
     }
 
     private static int getInt(Map<String, Object> map, String key) {
         Object val = map.get(key);
-        if (val instanceof Number) return ((Number) val).intValue();
-        return 0;
+        return val instanceof Number ? ((Number) val).intValue() : 0;
     }
 
     private static long getLong(Map<String, Object> map, String key) {
         Object val = map.get(key);
-        if (val instanceof Number) return ((Number) val).longValue();
-        return 0L;
+        return val instanceof Number ? ((Number) val).longValue() : 0L;
+    }
+
+    private static double getDouble(Map<String, Object> map, String key, double defaultVal) {
+        Object val = map.get(key);
+        return val instanceof Number ? ((Number) val).doubleValue() : defaultVal;
     }
 
     public JsonObject toJson() {
@@ -77,8 +81,8 @@ public class PlayerInfo {
         obj.addProperty("uuid", uuid);
         obj.addProperty("name", name);
         obj.addProperty("serverId", serverId);
-        if (world != null) obj.addProperty("world", world);
-        if (gamemode != null) obj.addProperty("gamemode", gamemode);
+        obj.addProperty("world", world != null ? world : "");
+        obj.addProperty("gamemode", gamemode != null ? gamemode : "");
         obj.addProperty("health", health);
         obj.addProperty("foodLevel", foodLevel);
         obj.addProperty("ping", ping);

@@ -10,6 +10,7 @@ import com.staffcontrol.proxy.config.ProxyConfig;
 import com.staffcontrol.proxy.database.DatabaseManager;
 import com.staffcontrol.proxy.model.PlayerInfo;
 import com.staffcontrol.proxy.model.ServerInfo;
+import com.staffcontrol.proxy.player.PlayerManager;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -28,19 +29,22 @@ public class AgentWebSocketServer extends WebSocketServer {
     private final AgentManager agentManager;
     private final AppWebSocketServer appServer;
     private final DatabaseManager database;
+    private final PlayerManager playerManager;
     private final Logger logger;
 
     private final ConcurrentHashMap<WebSocket, String> connectionToServerId = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Integer> reconnectCounts = new ConcurrentHashMap<>();
     private final Gson gson = new Gson();
 
     public AgentWebSocketServer(ProxyConfig config, AgentManager agentManager,
                                  AppWebSocketServer appServer, DatabaseManager database,
-                                 Logger logger) {
+                                 PlayerManager playerManager, Logger logger) {
         super(new InetSocketAddress(config.getAgentPort()));
         this.config = config;
         this.agentManager = agentManager;
         this.appServer = appServer;
         this.database = database;
+        this.playerManager = playerManager;
         this.logger = logger;
     }
 
@@ -54,20 +58,18 @@ public class AgentWebSocketServer extends WebSocketServer {
         String serverId = connectionToServerId.remove(conn);
         if (serverId != null) {
             logger.info("[AgentWS] Agent disconnected: " + serverId + " (code=" + code + ")");
+            String lastError = (code != 1000 && reason != null && !reason.isBlank()) ? reason : null;
             agentManager.removeAgent(serverId);
 
-            // Broadcast offline status to all app clients
-            appServer.broadcastServerStatus(serverId, false, 0, 0.0, 0.0, System.currentTimeMillis());
-
-            // Set all players on this server to offline in the cache
-            try {
-                database.setAllPlayersOfflineForServer(serverId, System.currentTimeMillis());
-            } catch (SQLException e) {
-                logger.warning("[AgentWS] Failed to set players offline for server " + serverId + ": " + e.getMessage());
+            List<String> removedPlayers = playerManager.agentDisconnected(serverId);
+            for (String uuid : removedPlayers) {
+                appServer.broadcastPlayerLeft(uuid, serverId);
             }
 
-            // Broadcast empty player list for the server
-            appServer.broadcastPlayerUpdate(serverId, new ArrayList<>());
+            long now = System.currentTimeMillis();
+            appServer.broadcastServerStatus(serverId, false, 0, 0.0, 0.0, now);
+            appServer.broadcastAgentStatus(serverId, false, "OFFLINE", null, 0, 0, 0, 0,
+                    reconnectCounts.getOrDefault(serverId, 0), lastError);
         } else {
             logger.info("[AgentWS] Unregistered agent connection closed (code=" + code + ")");
         }
@@ -84,17 +86,16 @@ public class AgentWebSocketServer extends WebSocketServer {
         }
 
         String type = json.has("type") ? json.get("type").getAsString() : null;
-        if (type == null) {
-            logger.warning("[AgentWS] Message missing 'type' field");
-            return;
-        }
+        if (type == null) return;
 
         switch (type) {
-            case "agent.register"  -> handleAgentRegister(conn, json);
-            case "agent.heartbeat" -> handleAgentHeartbeat(conn, json);
-            case "console.output"  -> handleConsoleOutput(conn, json);
-            case "players.update"  -> handlePlayersUpdate(conn, json);
-            default -> logger.warning("[AgentWS] Unknown message type from agent: " + type);
+            case "agent.register"    -> handleAgentRegister(conn, json);
+            case "agent.heartbeat"   -> handleAgentHeartbeat(conn, json);
+            case "agent.player.join" -> handlePlayerJoin(conn, json);
+            case "agent.player.leave"-> handlePlayerLeave(conn, json);
+            case "console.output"    -> handleConsoleOutput(conn, json);
+            case "players.update"    -> handlePlayersUpdate(conn, json);
+            default -> logger.fine("[AgentWS] Unknown message type from agent: " + type);
         }
     }
 
@@ -120,6 +121,7 @@ public class AgentWebSocketServer extends WebSocketServer {
         String serverName = getString(payload, "serverName");
         String serverType = getString(payload, "serverType");
         String host       = getString(payload, "host");
+        String version    = getString(payload, "version");
         int port          = payload.has("port") ? payload.get("port").getAsInt() : 0;
 
         if (serverId == null || agentToken == null) {
@@ -127,23 +129,13 @@ public class AgentWebSocketServer extends WebSocketServer {
             return;
         }
 
-        // Validate token — check against global agent token OR server-specific token in DB
-        boolean tokenValid = false;
-
-        // Check global token first
-        if (agentToken.equals(config.getAgentToken())) {
-            tokenValid = true;
-        }
-
-        // Check server-specific token from DB
+        boolean tokenValid = agentToken.equals(config.getAgentToken());
         if (!tokenValid) {
             try {
                 Map<String, Object> serverRow = database.getServer(serverId);
                 if (serverRow != null) {
                     String storedToken = getString(serverRow, "agent_token");
-                    if (agentToken.equals(storedToken)) {
-                        tokenValid = true;
-                    }
+                    tokenValid = agentToken.equals(storedToken);
                 }
             } catch (SQLException e) {
                 logger.warning("[AgentWS] DB error validating agent token: " + e.getMessage());
@@ -156,15 +148,9 @@ public class AgentWebSocketServer extends WebSocketServer {
             return;
         }
 
-        // If server doesn't exist in DB yet, it was registered via the app (servers.add) — look it up
         Map<String, Object> serverRow = null;
-        try {
-            serverRow = database.getServer(serverId);
-        } catch (SQLException e) {
-            logger.warning("[AgentWS] DB error fetching server: " + e.getMessage());
-        }
+        try { serverRow = database.getServer(serverId); } catch (SQLException ignored) {}
 
-        // Build AgentConnection
         AgentConnection agentConn = new AgentConnection(conn);
         agentConn.setServerId(serverId);
         agentConn.setServerName(serverName != null ? serverName
@@ -173,9 +159,9 @@ public class AgentWebSocketServer extends WebSocketServer {
                 : (serverRow != null ? getString(serverRow, "server_type") : "generic"));
         agentConn.setHost(host);
         agentConn.setPort(port);
+        if (version != null) agentConn.setVersion(version);
         agentConn.setRegistered(true);
 
-        // Initialise serverInfo skeleton
         ServerInfo si = new ServerInfo();
         si.setServerId(serverId);
         si.setServerName(agentConn.getServerName());
@@ -186,56 +172,110 @@ public class AgentWebSocketServer extends WebSocketServer {
         si.setLastHeartbeat(System.currentTimeMillis());
         agentConn.setServerInfo(si);
 
+        // Track reconnect attempts — first connection = 0, each re-registration increments
+        int attempts = reconnectCounts.compute(serverId, (k, v) -> v == null ? 0 : v + 1);
+        agentConn.setReconnectAttempts(attempts);
+        agentConn.setConnectTime(System.currentTimeMillis());
+
         agentManager.registerAgent(serverId, agentConn);
         connectionToServerId.put(conn, serverId);
 
         sendRegistrationResult(conn, true, "Registered successfully");
-        logger.info("[AgentWS] Agent registered: " + serverId + " (" + agentConn.getServerName() + ")");
+        logger.info("[AgentWS] Agent registered: " + serverId + " (" + agentConn.getServerName() + ")"
+                + (version != null ? " v" + version : ""));
 
-        // Broadcast online status to all app clients
-        appServer.broadcastServerStatus(serverId, true, 0, 20.0, 0.0, System.currentTimeMillis());
+        long now = System.currentTimeMillis();
+        appServer.broadcastServerStatus(serverId, true, 0, 20.0, 0.0, now);
+        appServer.broadcastAgentStatus(serverId, true, "ONLINE", agentConn.getVersion(),
+                agentConn.getProtocolVersion(), now, 0, agentConn.getConnectTime(), attempts, null);
     }
 
     private void handleAgentHeartbeat(WebSocket conn, JsonObject json) {
-        String serverId = json.has("serverId") ? json.get("serverId").getAsString() : null;
-        if (serverId == null) serverId = connectionToServerId.get(conn);
+        String serverId = resolveServerId(conn, json);
         if (serverId == null) return;
 
         JsonObject payload = json.has("payload") && json.get("payload").isJsonObject()
                 ? json.getAsJsonObject("payload") : new JsonObject();
 
-        double tps          = payload.has("tps")           ? payload.get("tps").getAsDouble()          : 20.0;
-        double mspt         = payload.has("mspt")          ? payload.get("mspt").getAsDouble()          : 0.0;
-        int onlinePlayers   = payload.has("onlinePlayers") ? payload.get("onlinePlayers").getAsInt()    : 0;
-        int maxPlayers      = payload.has("maxPlayers")    ? payload.get("maxPlayers").getAsInt()       : 0;
-        long timestamp      = System.currentTimeMillis();
+        double tps        = payload.has("tps")           ? payload.get("tps").getAsDouble()       : 20.0;
+        double mspt       = payload.has("mspt")          ? payload.get("mspt").getAsDouble()       : 0.0;
+        int onlinePlayers = payload.has("onlinePlayers") ? payload.get("onlinePlayers").getAsInt() : 0;
+        int maxPlayers    = payload.has("maxPlayers")    ? payload.get("maxPlayers").getAsInt()    : 0;
+        String version    = getString(payload, "version");
+        long now          = System.currentTimeMillis();
+        long sentAt       = payload.has("sentAt") ? payload.get("sentAt").getAsLong() : 0L;
+        long latency      = sentAt > 0 ? Math.max(0, now - sentAt) : 0L;
+
+        agentManager.getAgent(serverId).ifPresent(agent -> {
+            agent.updateFromHeartbeat(tps, mspt, onlinePlayers, maxPlayers, version, now);
+            if (latency > 0) agent.setLatencyMs(latency);
+        });
+
+        appServer.broadcastServerStatus(serverId, true, onlinePlayers, tps, mspt, now);
 
         agentManager.getAgent(serverId).ifPresent(agent ->
-            agent.updateFromHeartbeat(tps, mspt, onlinePlayers, maxPlayers, timestamp)
+            appServer.broadcastAgentStatus(serverId, true, "ONLINE", agent.getVersion(),
+                    agent.getProtocolVersion(), now, agent.getLatencyMs(),
+                    agent.getConnectTime(), agent.getReconnectAttempts(), null)
         );
+    }
 
-        appServer.broadcastServerStatus(serverId, true, onlinePlayers, tps, mspt, timestamp);
+    private void handlePlayerJoin(WebSocket conn, JsonObject json) {
+        String serverId = resolveServerId(conn, json);
+        if (serverId == null) return;
+
+        JsonObject payload = json.has("payload") && json.get("payload").isJsonObject()
+                ? json.getAsJsonObject("payload") : new JsonObject();
+
+        PlayerInfo player = parsePlayerInfo(payload, serverId, System.currentTimeMillis());
+        if (player.getUuid() == null || player.getName() == null) return;
+
+        String previousServer = playerManager.playerJoined(player);
+
+        if (previousServer != null) {
+            appServer.broadcastPlayerSwitched(player, previousServer);
+            logger.fine("[AgentWS] Player " + player.getName() + " switched from " + previousServer + " to " + serverId);
+        } else {
+            appServer.broadcastPlayerJoined(player);
+            logger.fine("[AgentWS] Player " + player.getName() + " joined network on " + serverId);
+        }
+    }
+
+    private void handlePlayerLeave(WebSocket conn, JsonObject json) {
+        String serverId = resolveServerId(conn, json);
+        if (serverId == null) return;
+
+        JsonObject payload = json.has("payload") && json.get("payload").isJsonObject()
+                ? json.getAsJsonObject("payload") : new JsonObject();
+
+        String uuid = getString(payload, "uuid");
+        if (uuid == null) return;
+
+        long playtimeSeconds = payload.has("playtimeSeconds") ? payload.get("playtimeSeconds").getAsLong() : 0L;
+
+        boolean removed = playerManager.playerLeft(uuid, serverId, playtimeSeconds);
+        if (removed) {
+            appServer.broadcastPlayerLeft(uuid, serverId);
+            logger.fine("[AgentWS] Player " + uuid + " left " + serverId);
+        }
     }
 
     private void handleConsoleOutput(WebSocket conn, JsonObject json) {
-        String serverId = json.has("serverId") ? json.get("serverId").getAsString() : null;
-        if (serverId == null) serverId = connectionToServerId.get(conn);
+        String serverId = resolveServerId(conn, json);
         if (serverId == null) return;
 
         JsonObject payload = json.has("payload") && json.get("payload").isJsonObject()
                 ? json.getAsJsonObject("payload") : new JsonObject();
 
-        String line       = getString(payload, "line");
-        long timestamp    = payload.has("timestamp") ? payload.get("timestamp").getAsLong() : System.currentTimeMillis();
-
+        String line    = getString(payload, "line");
+        long timestamp = payload.has("timestamp") ? payload.get("timestamp").getAsLong() : System.currentTimeMillis();
         if (line == null) return;
 
         appServer.broadcastConsoleOutput(serverId, line, timestamp);
     }
 
     private void handlePlayersUpdate(WebSocket conn, JsonObject json) {
-        String serverId = json.has("serverId") ? json.get("serverId").getAsString() : null;
-        if (serverId == null) serverId = connectionToServerId.get(conn);
+        String serverId = resolveServerId(conn, json);
         if (serverId == null) return;
 
         JsonObject payload = json.has("payload") && json.get("payload").isJsonObject()
@@ -244,50 +284,20 @@ public class AgentWebSocketServer extends WebSocketServer {
         JsonArray playersArray = payload.has("players") && payload.get("players").isJsonArray()
                 ? payload.getAsJsonArray("players") : new JsonArray();
 
-        List<PlayerInfo> players = new ArrayList<>();
-        List<String> receivedUuids = new ArrayList<>();
         long now = System.currentTimeMillis();
+        List<PlayerInfo> players = new ArrayList<>();
 
         for (JsonElement el : playersArray) {
             if (!el.isJsonObject()) continue;
-            JsonObject p = el.getAsJsonObject();
-
-            String uuid     = getString(p, "uuid");
-            String name     = getString(p, "name");
-            String world    = getString(p, "world");
-            String gamemode = getString(p, "gamemode");
-            double health   = p.has("health")    ? p.get("health").getAsDouble()    : 20.0;
-            int foodLevel   = p.has("foodLevel") ? p.get("foodLevel").getAsInt()    : 20;
-            int ping        = p.has("ping")      ? p.get("ping").getAsInt()         : 0;
-
-            if (uuid == null || name == null) continue;
-
-            receivedUuids.add(uuid);
-
-            // Upsert into player cache
-            try {
-                database.upsertPlayer(uuid, name, serverId, true, now);
-                database.setFirstJoined(uuid, now);
-            } catch (SQLException e) {
-                logger.warning("[AgentWS] Failed to upsert player " + uuid + ": " + e.getMessage());
+            PlayerInfo pi = parsePlayerInfo(el.getAsJsonObject(), serverId, now);
+            if (pi.getUuid() != null && pi.getName() != null) {
+                players.add(pi);
             }
-
-            PlayerInfo pi = new PlayerInfo(uuid, name, serverId, world, gamemode,
-                    health, foodLevel, ping, true, 0L, now, 0L);
-            players.add(pi);
         }
 
-        // Set players that were previously online on this server but not in the update to offline
-        try {
-            List<Map<String, Object>> currentOnline = database.getPlayersByServer(serverId);
-            for (Map<String, Object> row : currentOnline) {
-                String uuid = getString(row, "uuid");
-                if (uuid != null && !receivedUuids.contains(uuid)) {
-                    database.setPlayerOffline(uuid, now);
-                }
-            }
-        } catch (SQLException e) {
-            logger.warning("[AgentWS] Failed to update offline players for server " + serverId + ": " + e.getMessage());
+        List<String> removedUuids = playerManager.reconcileServerPlayers(serverId, players);
+        for (String uuid : removedUuids) {
+            appServer.broadcastPlayerLeft(uuid, serverId);
         }
 
         appServer.broadcastPlayerUpdate(serverId, players);
@@ -295,21 +305,40 @@ public class AgentWebSocketServer extends WebSocketServer {
 
     // ---- Utility ----
 
+    private PlayerInfo parsePlayerInfo(JsonObject p, String serverId, long now) {
+        PlayerInfo pi = new PlayerInfo();
+        pi.setUuid(getString(p, "uuid"));
+        pi.setName(getString(p, "name"));
+        pi.setServerId(serverId);
+        pi.setWorld(getString(p, "world"));
+        pi.setGamemode(getString(p, "gamemode"));
+        pi.setHealth(p.has("health") ? p.get("health").getAsDouble() : 20.0);
+        pi.setFoodLevel(p.has("foodLevel") ? p.get("foodLevel").getAsInt() : 20);
+        pi.setPing(p.has("ping") ? p.get("ping").getAsInt() : 0);
+        pi.setOnline(true);
+        pi.setFirstJoined(p.has("firstJoined") ? p.get("firstJoined").getAsLong() : now);
+        pi.setLastJoined(p.has("lastJoined") ? p.get("lastJoined").getAsLong() : now);
+        pi.setPlaytimeSeconds(p.has("playtimeSeconds") ? p.get("playtimeSeconds").getAsLong() : 0L);
+        return pi;
+    }
+
+    private String resolveServerId(WebSocket conn, JsonObject json) {
+        String serverId = json.has("serverId") ? json.get("serverId").getAsString() : null;
+        if (serverId == null) serverId = connectionToServerId.get(conn);
+        return serverId;
+    }
+
     private void sendRegistrationResult(WebSocket conn, boolean success, String message) {
         JsonObject resp = new JsonObject();
         resp.addProperty("type", "agent.registered");
         resp.addProperty("success", success);
         resp.addProperty("message", message);
-        if (conn.isOpen()) {
-            conn.send(gson.toJson(resp));
-        }
+        if (conn.isOpen()) conn.send(gson.toJson(resp));
     }
 
     private String getString(JsonObject obj, String key) {
-        if (obj != null && obj.has(key) && !obj.get(key).isJsonNull()) {
-            return obj.get(key).getAsString();
-        }
-        return null;
+        return (obj != null && obj.has(key) && !obj.get(key).isJsonNull())
+                ? obj.get(key).getAsString() : null;
     }
 
     private String getString(Map<String, Object> map, String key) {

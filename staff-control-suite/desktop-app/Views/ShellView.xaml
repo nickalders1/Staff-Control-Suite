@@ -26,7 +26,8 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="#2a2a4a"/>
+                                <Setter TargetName="Border" Property="Background"
+                                        Value="{DynamicResource NavHighlightBrush}"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Border" Property="Background" Value="#252535"/>
@@ -59,12 +60,12 @@
                                          Foreground="#89b4fa"
                                          VerticalAlignment="Center"
                                          Margin="0,0,8,0"/>
-                            <TextBlock Text="Staff Control"
+                            <TextBlock Text="{Binding SidebarTitle, FallbackValue='Staff Control'}"
                                        FontSize="16" FontWeight="Bold"
                                        Foreground="White"
                                        VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="{Binding ConnectedServer}"
+                        <TextBlock Text="{Binding SidebarSubtitle}"
                                    FontSize="11"
                                    Foreground="#6c7086"
                                    Margin="0,4,0,0"/>
@@ -201,6 +202,18 @@
                                        FontSize="14" VerticalAlignment="Center"/>
                         </StackPanel>
                     </ListBoxItem>
+
+                    <!-- Moderation -->
+                    <ListBoxItem Tag="Moderation" Style="{StaticResource NavItemStyle}"
+                                 Visibility="{Binding CanViewModeration, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon Kind="Gavel" Width="20" Height="20"
+                                         Foreground="#89b4fa" VerticalAlignment="Center"
+                                         Margin="0,0,12,0"/>
+                            <TextBlock Text="Moderation" Foreground="#cdd6f4"
+                                       FontSize="14" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ListBoxItem>
                 </ListBox>
             </DockPanel>
         </Border>
@@ -209,6 +222,7 @@
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="56"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -233,8 +247,34 @@
                 </Grid>
             </Border>
 
+            <!-- Update Banner -->
+            <Border Grid.Row="1"
+                    Background="#313244"
+                    Padding="16,8"
+                    Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <md:PackIcon Kind="ArrowUpCircle" Width="16" Height="16"
+                                     Foreground="#a6e3a1" VerticalAlignment="Center"
+                                     Margin="0,0,8,0"/>
+                        <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="#cdd6f4">
+                            <Run Text="Version"/>
+                            <Run Text="{Binding LatestVersion, Mode=OneWay}" Foreground="#a6e3a1" FontWeight="SemiBold"/>
+                            <Run Text="is available"/>
+                        </TextBlock>
+                    </StackPanel>
+                    <Button HorizontalAlignment="Right"
+                            Command="{Binding OpenReleasePageCommand}"
+                            Style="{StaticResource MaterialDesignFlatButton}"
+                            Foreground="#89b4fa"
+                            FontSize="12">
+                        Download update
+                    </Button>
+                </Grid>
+            </Border>
+
             <!-- Content -->
-            <ContentControl Grid.Row="1"
+            <ContentControl Grid.Row="2"
                             x:Name="ContentArea"
                             Background="#1e1e2e"/>
         </Grid>

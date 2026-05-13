@@ -51,7 +51,6 @@ public class AppWebSocketServer extends WebSocketServer {
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         String remoteIp = conn.getRemoteSocketAddress().getAddress().getHostAddress();
         List<String> allowedIps = config.getAllowedIps();
-
         if (!allowedIps.isEmpty() && !allowedIps.contains(remoteIp)) {
             logger.warning("[AppWS] Rejected connection from " + remoteIp + " (not in allowedIps)");
             JsonObject rejection = new JsonObject();
@@ -61,7 +60,6 @@ public class AppWebSocketServer extends WebSocketServer {
             conn.close();
             return;
         }
-
         logger.info("[AppWS] New connection from " + remoteIp);
     }
 
@@ -95,7 +93,6 @@ public class AppWebSocketServer extends WebSocketServer {
         }
 
         ClientSession session = clientSessions.get(conn);
-
         if (messageHandler != null) {
             messageHandler.handle(conn, json, session);
         } else {
@@ -114,6 +111,8 @@ public class AppWebSocketServer extends WebSocketServer {
         logger.info("[AppWS] App WebSocket server started on port " + config.getApiPort());
     }
 
+    // ---- Broadcast Methods ----
+
     public void broadcastConsoleOutput(String serverId, String line, long timestamp) {
         JsonObject event = new JsonObject();
         event.addProperty("type", "event.console.line");
@@ -127,10 +126,7 @@ public class AppWebSocketServer extends WebSocketServer {
         for (Map.Entry<WebSocket, ClientSession> entry : clientSessions.entrySet()) {
             ClientSession session = entry.getValue();
             if (session.isSubscribed(serverId) && session.hasPermission("console.view")) {
-                WebSocket ws = entry.getKey();
-                if (ws.isOpen()) {
-                    ws.send(json);
-                }
+                send(entry.getKey(), json);
             }
         }
     }
@@ -150,12 +146,82 @@ public class AppWebSocketServer extends WebSocketServer {
         String json = gson.toJson(event);
 
         for (Map.Entry<WebSocket, ClientSession> entry : clientSessions.entrySet()) {
-            ClientSession session = entry.getValue();
-            if (session.hasPermission("servers.view")) {
-                WebSocket ws = entry.getKey();
-                if (ws.isOpen()) {
-                    ws.send(json);
-                }
+            if (entry.getValue().hasPermission("servers.view")) {
+                send(entry.getKey(), json);
+            }
+        }
+    }
+
+    public void broadcastPlayerJoined(PlayerInfo player) {
+        JsonObject event = new JsonObject();
+        event.addProperty("type", "event.player.join");
+        JsonObject payload = player.toJson();
+        payload.addProperty("isSwitch", false);
+        event.add("payload", payload);
+        String json = gson.toJson(event);
+
+        for (Map.Entry<WebSocket, ClientSession> entry : clientSessions.entrySet()) {
+            if (entry.getValue().hasPermission("players.view")) {
+                send(entry.getKey(), json);
+            }
+        }
+    }
+
+    public void broadcastPlayerSwitched(PlayerInfo player, String previousServer) {
+        JsonObject event = new JsonObject();
+        event.addProperty("type", "event.player.join");
+        JsonObject payload = player.toJson();
+        payload.addProperty("isSwitch", true);
+        payload.addProperty("previousServer", previousServer);
+        event.add("payload", payload);
+        String json = gson.toJson(event);
+
+        for (Map.Entry<WebSocket, ClientSession> entry : clientSessions.entrySet()) {
+            if (entry.getValue().hasPermission("players.view")) {
+                send(entry.getKey(), json);
+            }
+        }
+    }
+
+    public void broadcastPlayerLeft(String uuid, String serverId) {
+        JsonObject event = new JsonObject();
+        event.addProperty("type", "event.player.leave");
+        JsonObject payload = new JsonObject();
+        payload.addProperty("uuid", uuid);
+        payload.addProperty("serverId", serverId);
+        event.add("payload", payload);
+        String json = gson.toJson(event);
+
+        for (Map.Entry<WebSocket, ClientSession> entry : clientSessions.entrySet()) {
+            if (entry.getValue().hasPermission("players.view")) {
+                send(entry.getKey(), json);
+            }
+        }
+    }
+
+    public void broadcastAgentStatus(String serverId, boolean connected, String status,
+                                      String version, int protocolVersion, long lastHeartbeatAt,
+                                      long latencyMs, long connectTime, int reconnectAttempts,
+                                      String lastError) {
+        JsonObject event = new JsonObject();
+        event.addProperty("type", "event.agent.status");
+        JsonObject payload = new JsonObject();
+        payload.addProperty("serverId", serverId);
+        payload.addProperty("connected", connected);
+        payload.addProperty("status", status);
+        if (version != null) payload.addProperty("version", version); else payload.addProperty("version", "");
+        payload.addProperty("protocolVersion", protocolVersion);
+        payload.addProperty("lastHeartbeatAt", lastHeartbeatAt);
+        payload.addProperty("latencyMs", latencyMs);
+        payload.addProperty("connectTime", connectTime);
+        payload.addProperty("reconnectAttempts", reconnectAttempts);
+        payload.addProperty("lastError", lastError != null ? lastError : "");
+        event.add("payload", payload);
+        String json = gson.toJson(event);
+
+        for (Map.Entry<WebSocket, ClientSession> entry : clientSessions.entrySet()) {
+            if (entry.getValue().hasPermission("servers.view")) {
+                send(entry.getKey(), json);
             }
         }
     }
@@ -166,20 +232,27 @@ public class AppWebSocketServer extends WebSocketServer {
         JsonObject payload = new JsonObject();
         payload.addProperty("serverId", serverId);
         com.google.gson.JsonArray arr = new com.google.gson.JsonArray();
-        for (PlayerInfo p : players) {
-            arr.add(p.toJson());
-        }
+        for (PlayerInfo p : players) arr.add(p.toJson());
         payload.add("players", arr);
         event.add("payload", payload);
         String json = gson.toJson(event);
 
         for (Map.Entry<WebSocket, ClientSession> entry : clientSessions.entrySet()) {
-            ClientSession session = entry.getValue();
-            if (session.hasPermission("players.view")) {
-                WebSocket ws = entry.getKey();
-                if (ws.isOpen()) {
-                    ws.send(json);
-                }
+            if (entry.getValue().hasPermission("players.view")) {
+                send(entry.getKey(), json);
+            }
+        }
+    }
+
+    public void broadcastPunishmentEvent(String eventType, JsonObject payload) {
+        JsonObject event = new JsonObject();
+        event.addProperty("type", eventType);
+        event.add("payload", payload);
+        String json = gson.toJson(event);
+
+        for (Map.Entry<WebSocket, ClientSession> entry : clientSessions.entrySet()) {
+            if (entry.getValue().hasPermission("moderation.view")) {
+                send(entry.getKey(), json);
             }
         }
     }
@@ -190,9 +263,7 @@ public class AppWebSocketServer extends WebSocketServer {
         if (requestId != null) response.addProperty("requestId", requestId);
         response.addProperty("success", true);
         response.add("payload", payload);
-        if (ws.isOpen()) {
-            ws.send(gson.toJson(response));
-        }
+        send(ws, gson.toJson(response));
     }
 
     public void sendError(WebSocket ws, String requestId, String errorCode, String message) {
@@ -202,20 +273,14 @@ public class AppWebSocketServer extends WebSocketServer {
         response.addProperty("success", false);
         response.addProperty("error", errorCode);
         response.addProperty("message", message);
-        if (ws != null && ws.isOpen()) {
-            ws.send(gson.toJson(response));
-        }
+        if (ws != null) send(ws, gson.toJson(response));
     }
 
-    public ConcurrentHashMap<WebSocket, ClientSession> getClientSessions() {
-        return clientSessions;
+    private void send(WebSocket ws, String json) {
+        if (ws != null && ws.isOpen()) ws.send(json);
     }
 
-    public void putSession(WebSocket ws, ClientSession session) {
-        clientSessions.put(ws, session);
-    }
-
-    public void removeSession(WebSocket ws) {
-        clientSessions.remove(ws);
-    }
+    public ConcurrentHashMap<WebSocket, ClientSession> getClientSessions() { return clientSessions; }
+    public void putSession(WebSocket ws, ClientSession session) { clientSessions.put(ws, session); }
+    public void removeSession(WebSocket ws) { clientSessions.remove(ws); }
 }

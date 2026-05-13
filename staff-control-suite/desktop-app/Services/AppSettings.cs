@@ -16,6 +16,17 @@ public class AppSettings
     public int ProxyPort { get; set; } = 8080;
     public string? LastToken { get; set; }
 
+    public string SidebarTitle { get; set; } = "";
+    public string SidebarSubtitle { get; set; } = "";
+    public string LogoImagePath { get; set; } = "";
+    public string AccentColor { get; set; } = "#89b4fa";
+    public string SecondaryAccentColor { get; set; } = "";
+    public bool CompactMode { get; set; } = false;
+    public string ThemeMode { get; set; } = "Dark";
+
+    public static string SettingsDirectory =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "StaffControlSuite");
+
     public static void Load()
     {
         try

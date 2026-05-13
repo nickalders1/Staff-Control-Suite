@@ -32,7 +32,7 @@ public partial class MainWindow : Window
             bool setupNeeded = false;
             if (result.ValueKind != JsonValueKind.Undefined && result.ValueKind != JsonValueKind.Null)
             {
-                if (result.TryGetProperty("setupRequired", out var setupProp))
+                if (result.TryGetProperty("needsSetup", out var setupProp))
                     setupNeeded = setupProp.GetBoolean();
             }
 

@@ -7,6 +7,7 @@
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter"/>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -110,10 +111,10 @@
                 </StackPanel>
             </md:Card>
 
-            <!-- Theme Settings (Placeholder) -->
-            <md:Card Padding="24" Background="#313244">
+            <!-- Appearance Settings -->
+            <md:Card Padding="24" Background="#313244" Margin="0,0,0,16">
                 <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
                         <md:PackIcon Kind="Palette" Width="20" Height="20"
                                      Foreground="#89b4fa" VerticalAlignment="Center"
                                      Margin="0,0,10,0"/>
@@ -121,8 +122,119 @@
                                    FontSize="16" FontWeight="SemiBold"
                                    Foreground="White" VerticalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock Text="Theme customization coming soon."
-                               FontSize="13" Foreground="#45475a"/>
+
+                    <!-- App title -->
+                    <TextBlock Text="App title (sidebar heading)" FontSize="11"
+                               Foreground="#6c7086" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding AppSidebarTitle, UpdateSourceTrigger=PropertyChanged}"
+                             md:HintAssist.Hint="e.g. My Panel"
+                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                             Foreground="White" Margin="0,0,0,12"/>
+
+                    <!-- Network name -->
+                    <TextBlock Text="Network name (sidebar subtitle)" FontSize="11"
+                               Foreground="#6c7086" Margin="0,0,0,4"/>
+                    <TextBox Text="{Binding AppSidebarSubtitle, UpdateSourceTrigger=PropertyChanged}"
+                             md:HintAssist.Hint="e.g. My Network"
+                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                             Foreground="White" Margin="0,0,0,12"/>
+
+                    <!-- Accent color (primary) -->
+                    <TextBlock Text="Primary accent color (hex)" FontSize="11"
+                               Foreground="#6c7086" Margin="0,0,0,4"/>
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="36"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding AppAccentColor, UpdateSourceTrigger=PropertyChanged}"
+                                 md:HintAssist.Hint="#89b4fa"
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 Foreground="White" FontFamily="Consolas"/>
+                        <Border Grid.Column="2" CornerRadius="4" Width="36" Height="36"
+                                Background="{Binding AccentColorBrush}"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Secondary accent color (gradient) -->
+                    <TextBlock Text="Secondary accent color — optional, enables gradient (hex)"
+                               FontSize="11" Foreground="#6c7086" Margin="0,0,0,4"/>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="36"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding AppSecondaryAccentColor, UpdateSourceTrigger=PropertyChanged}"
+                                 md:HintAssist.Hint="Leave empty for solid accent"
+                                 md:TextFieldAssist.HasClearButton="True"
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 Foreground="White" FontFamily="Consolas"/>
+                        <Border Grid.Column="2" CornerRadius="4" Width="36" Height="36"
+                                Background="{Binding SecondaryAccentColorBrush}"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Theme mode -->
+                    <TextBlock Text="Theme mode" FontSize="11"
+                               Foreground="#6c7086" Margin="0,0,0,4"/>
+                    <ComboBox ItemsSource="{Binding ThemeModes}"
+                              SelectedItem="{Binding AppThemeMode}"
+                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                              Foreground="White" Margin="0,0,0,12"/>
+
+                    <!-- Compact mode -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <CheckBox IsChecked="{Binding CompactMode}"
+                                  Foreground="#cdd6f4"
+                                  Content="Compact mode (applies on next launch)"
+                                  Style="{StaticResource MaterialDesignCheckBox}"/>
+                    </StackPanel>
+
+                    <!-- Logo path (read-only display) -->
+                    <TextBlock Text="Logo file (from proxy branding)" FontSize="11"
+                               Foreground="#6c7086" Margin="0,0,0,4"/>
+                    <TextBlock Text="{Binding LogoImagePath, TargetNullValue='(not set)', FallbackValue='(not set)'}"
+                               FontSize="12" Foreground="#45475a" FontFamily="Consolas"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip="{Binding LogoImagePath}"
+                               Margin="0,0,0,16"/>
+
+                    <!-- Fetch from proxy -->
+                    <Button Command="{Binding FetchBrandingFromProxyCommand}"
+                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Foreground="#cba6f7" BorderBrush="#cba6f7"
+                            HorizontalAlignment="Left"
+                            Margin="0,0,0,12"
+                            IsEnabled="{Binding IsFetchingBranding,
+                                Converter={StaticResource InvertedBoolConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon Kind="CloudDownload" Width="16" Height="16"
+                                         VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Fetch branding from proxy"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Feedback -->
+                    <TextBlock Text="{Binding SaveMessage}"
+                               Foreground="#a6e3a1" FontSize="12"
+                               Margin="0,0,0,12"
+                               Visibility="{Binding HasSaveMessage, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                    <!-- Save appearance -->
+                    <Button Command="{Binding SaveAppearanceCommand}"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Background="#89b4fa" Foreground="#1e1e2e"
+                            HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon Kind="ContentSave" Width="16" Height="16"
+                                         VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Save Appearance"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </md:Card>
 

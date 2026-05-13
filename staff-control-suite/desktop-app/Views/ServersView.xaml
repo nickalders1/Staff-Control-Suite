@@ -9,179 +9,382 @@
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:InvertedBoolToVisibilityConverter x:Key="InvertedBoolToVisibilityConverter"/>
         <converters:StatusToColorConverter x:Key="StatusToColorConverter"/>
+        <converters:AgentStatusToColorConverter x:Key="AgentStatusToColorConverter"/>
     </UserControl.Resources>
 
-    <Grid Margin="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <TabControl x:Name="MainTabControl"
+                Margin="24"
+                Background="Transparent"
+                BorderThickness="0"
+                SelectionChanged="MainTabControl_SelectionChanged">
 
-        <!-- Toolbar -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
-            <StackPanel Orientation="Horizontal">
-                <Button Command="{Binding LoadServersCommand}"
-                        Style="{StaticResource MaterialDesignOutlinedButton}"
-                        Foreground="#89b4fa" BorderBrush="#89b4fa"
-                        Margin="0,0,8,0">
+        <TabControl.Resources>
+            <Style TargetType="TabItem" BasedOn="{StaticResource MaterialDesignTabItem}">
+                <Setter Property="Foreground" Value="#cdd6f4"/>
+                <Setter Property="FontSize" Value="13"/>
+            </Style>
+        </TabControl.Resources>
+
+        <!-- ═══════════════════════════════ SERVERS TAB ═══════════════════════════════ -->
+        <TabItem Header="Servers">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Toolbar -->
+                <Grid Grid.Row="0" Margin="0,8,0,12">
                     <StackPanel Orientation="Horizontal">
-                        <md:PackIcon Kind="Refresh" Width="16" Height="16"
-                                     VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Refresh"/>
-                    </StackPanel>
-                </Button>
+                        <Button Command="{Binding LoadServersCommand}"
+                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                Foreground="#89b4fa" BorderBrush="#89b4fa"
+                                Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="Refresh" Width="16" Height="16"
+                                             VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Refresh"/>
+                            </StackPanel>
+                        </Button>
 
-                <Button Command="{Binding AddServerCommand}"
-                        Style="{StaticResource MaterialDesignRaisedButton}"
-                        Background="#a6e3a1" Foreground="#1e1e2e"
-                        Visibility="{Binding CanManage, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Button Command="{Binding AddServerCommand}"
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="#a6e3a1" Foreground="#1e1e2e"
+                                Visibility="{Binding CanManage, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="Plus" Width="16" Height="16"
+                                             VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Add Server"/>
+                            </StackPanel>
+                        </Button>
+
+                        <ProgressBar IsIndeterminate="True" Width="80" Height="4"
+                                     Margin="16,0,0,0"
+                                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                                     Foreground="#89b4fa"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding ErrorMessage}"
+                               Foreground="#f38ba8"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right"
+                               FontSize="12"/>
+                </Grid>
+
+                <!-- Servers DataGrid -->
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding Servers}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="True"
+                          SelectionMode="Single"
+                          Background="#181825"
+                          Foreground="#cdd6f4"
+                          BorderThickness="1"
+                          BorderBrush="#313244"
+                          RowBackground="#1e1e2e"
+                          AlternatingRowBackground="#252535"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#313244"
+                          HeadersVisibility="Column"
+                          ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}">
+
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="Status" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
+                                        <Ellipse Width="8" Height="8"
+                                                 Fill="{Binding IsOnline, Converter={StaticResource StatusToColorConverter}}"
+                                                 Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding StatusDisplay}"
+                                                   Foreground="{Binding IsOnline, Converter={StaticResource StatusToColorConverter}}"
+                                                   FontSize="12"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="Server ID" Binding="{Binding ServerId}" Width="130">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#89b4fa"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Setter Property="ToolTip" Value="{Binding ServerId}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="Name" Binding="{Binding ServerName}" Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Setter Property="ToolTip" Value="{Binding ServerName}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="Type" Binding="{Binding ServerType}" Width="100">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#6c7086"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="Players" Binding="{Binding PlayerDisplay}" Width="80">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="TPS" Binding="{Binding TpsDisplay}" Width="65">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#f9e2af"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="MSPT" Binding="{Binding MsptDisplay}" Width="80">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#6c7086"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="Last Heartbeat" Binding="{Binding LastHeartbeatDisplay}" Width="120">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#6c7086"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTemplateColumn Header="Actions" Width="120"
+                                                Visibility="{Binding DataContext.CanManage,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl},
+                                                    Converter={StaticResource BoolToVisibilityConverter}}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="4,0">
+                                        <Button Command="{Binding DataContext.EditServerCommand,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                Style="{StaticResource MaterialDesignIconButton}"
+                                                Foreground="#89b4fa"
+                                                ToolTip="Edit" Width="28" Height="28">
+                                            <md:PackIcon Kind="Pencil" Width="14" Height="14"/>
+                                        </Button>
+                                        <Button Command="{Binding DataContext.RemoveServerCommand,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding ServerId}"
+                                                Style="{StaticResource MaterialDesignIconButton}"
+                                                Foreground="#f38ba8"
+                                                ToolTip="Remove" Width="28" Height="28">
+                                            <md:PackIcon Kind="Delete" Width="14" Height="14"/>
+                                        </Button>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
+
+        <!-- ═══════════════════════════════ AGENT STATUS TAB ═══════════════════════════════ -->
+        <TabItem Header="Agent Status">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Toolbar -->
+                <Grid Grid.Row="0" Margin="0,8,0,12">
                     <StackPanel Orientation="Horizontal">
-                        <md:PackIcon Kind="Plus" Width="16" Height="16"
-                                     VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Add Server"/>
+                        <Button Command="{Binding LoadAgentStatusCommand}"
+                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                Foreground="#89b4fa" BorderBrush="#89b4fa"
+                                Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="Refresh" Width="16" Height="16"
+                                             VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Refresh"/>
+                            </StackPanel>
+                        </Button>
+
+                        <ProgressBar IsIndeterminate="True" Width="80" Height="4"
+                                     Margin="8,0,0,0"
+                                     Visibility="{Binding IsLoadingAgents, Converter={StaticResource BoolToVisibilityConverter}}"
+                                     Foreground="#89b4fa"/>
                     </StackPanel>
-                </Button>
 
-                <ProgressBar IsIndeterminate="True" Width="80" Height="4"
-                             Margin="16,0,0,0"
-                             Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                             Foreground="#89b4fa"/>
-            </StackPanel>
-        </Grid>
+                    <TextBlock Text="Real-time updates active"
+                               Foreground="#45475a"
+                               FontSize="11"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right"/>
+                </Grid>
 
-        <!-- DataGrid -->
-        <DataGrid Grid.Row="1"
-                  ItemsSource="{Binding Servers}"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  IsReadOnly="True"
-                  SelectionMode="Single"
-                  Background="#181825"
-                  Foreground="#cdd6f4"
-                  BorderThickness="1"
-                  BorderBrush="#313244"
-                  RowBackground="#1e1e2e"
-                  AlternatingRowBackground="#252535"
-                  GridLinesVisibility="Horizontal"
-                  HorizontalGridLinesBrush="#313244"
-                  HeadersVisibility="Column"
-                  ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}">
+                <!-- Agent Status DataGrid -->
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding AgentStatuses}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="True"
+                          SelectionMode="Single"
+                          Background="#181825"
+                          Foreground="#cdd6f4"
+                          BorderThickness="1"
+                          BorderBrush="#313244"
+                          RowBackground="#1e1e2e"
+                          AlternatingRowBackground="#252535"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#313244"
+                          HeadersVisibility="Column"
+                          ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}">
 
-            <DataGrid.Columns>
-                <!-- Status -->
-                <DataGridTemplateColumn Header="Status" Width="90">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
-                                <Ellipse Width="8" Height="8"
-                                         Fill="{Binding IsOnline, Converter={StaticResource StatusToColorConverter}}"
-                                         Margin="0,0,6,0"/>
-                                <TextBlock Text="{Binding StatusDisplay}"
-                                           Foreground="{Binding IsOnline, Converter={StaticResource StatusToColorConverter}}"
-                                           FontSize="12"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
+                    <DataGrid.Columns>
+                        <!-- Status dot + label -->
+                        <DataGridTemplateColumn Header="Status" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="8,0">
+                                        <Ellipse Width="8" Height="8"
+                                                 Fill="{Binding Status, Converter={StaticResource AgentStatusToColorConverter}}"
+                                                 Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding Status}"
+                                                   Foreground="{Binding Status, Converter={StaticResource AgentStatusToColorConverter}}"
+                                                   FontSize="12"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
 
-                <DataGridTextColumn Header="Server ID" Binding="{Binding ServerId}" Width="120">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="#89b4fa"/>
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                        <DataGridTextColumn Header="Server ID" Binding="{Binding ServerId}" Width="130">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="#89b4fa"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Setter Property="ToolTip" Value="{Binding ServerId}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Name" Binding="{Binding ServerName}" Width="*">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                        <DataGridTextColumn Header="Name" Binding="{Binding ServerName}" Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Setter Property="ToolTip" Value="{Binding ServerName}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Type" Binding="{Binding ServerType}" Width="100">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#6c7086"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                        <DataGridTextColumn Header="Type" Binding="{Binding ServerType}" Width="90">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#6c7086"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Players" Binding="{Binding PlayerDisplay}" Width="80">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="TextAlignment" Value="Center"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                        <DataGridTextColumn Header="Version" Binding="{Binding VersionDisplay}" Width="90">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#cdd6f4"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
-                <DataGridTextColumn Header="TPS" Binding="{Binding TpsDisplay}" Width="80">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#f9e2af"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                        <DataGridTextColumn Header="Proto" Binding="{Binding ProtocolVersion}" Width="60">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#6c7086"/>
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
-                <DataGridTextColumn Header="MSPT" Binding="{Binding Mspt, StringFormat={}{0:F1}ms}" Width="80">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#6c7086"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                        <DataGridTextColumn Header="Latency" Binding="{Binding LatencyDisplay}" Width="75">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#f9e2af"/>
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Last Heartbeat" Binding="{Binding LastHeartbeatDisplay}" Width="110">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#6c7086"/>
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
+                        <DataGridTextColumn Header="Last Heartbeat" Binding="{Binding HeartbeatAgeDisplay}" Width="120">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#6c7086"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
-                <!-- Actions -->
-                <DataGridTemplateColumn Header="Actions" Width="120"
-                                        Visibility="{Binding DataContext.CanManage,
-                                            RelativeSource={RelativeSource AncestorType=UserControl},
-                                            Converter={StaticResource BoolToVisibilityConverter}}">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal" Margin="4,0">
-                                <Button Command="{Binding DataContext.EditServerCommand,
-                                            RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        Style="{StaticResource MaterialDesignIconButton}"
-                                        Foreground="#89b4fa"
-                                        ToolTip="Edit" Width="28" Height="28">
-                                    <md:PackIcon Kind="Pencil" Width="14" Height="14"/>
-                                </Button>
-                                <Button Command="{Binding DataContext.RemoveServerCommand,
-                                            RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding ServerId}"
-                                        Style="{StaticResource MaterialDesignIconButton}"
-                                        Foreground="#f38ba8"
-                                        ToolTip="Remove" Width="28" Height="28">
-                                    <md:PackIcon Kind="Delete" Width="14" Height="14"/>
-                                </Button>
-                            </StackPanel>
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-            </DataGrid.Columns>
-        </DataGrid>
-    </Grid>
+                        <DataGridTextColumn Header="Reconnects" Binding="{Binding ReconnectsDisplay}" Width="90">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="8,0"/>
+                                    <Setter Property="Foreground" Value="#cba6f7"/>
+                                    <Setter Property="TextAlignment" Value="Center"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <!-- Last Error — trimmed with full tooltip -->
+                        <DataGridTemplateColumn Header="Last Error" Width="200">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding LastError}"
+                                               VerticalAlignment="Center"
+                                               Margin="8,0"
+                                               Foreground="#f38ba8"
+                                               FontSize="12"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding LastError}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </TabItem>
+
+    </TabControl>
 </UserControl>

@@ -5,12 +5,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using StaffControlSuite.Models;
 using StaffControlSuite.Protocol;
+using StaffControlSuite.Services;
 
 namespace StaffControlSuite.ViewModels;
 
 public partial class ConsoleViewModel : ObservableObject
 {
-    private const int MaxConsoleLines = 1000;
+    private readonly ConsoleLogService _logService;
 
     public ObservableCollection<string> ConsoleLines { get; } = new();
     public ObservableCollection<ServerInfo> AvailableServers { get; } = new();
@@ -27,9 +28,7 @@ public partial class ConsoleViewModel : ObservableObject
         {
             var old = _selectedServer;
             if (SetProperty(ref _selectedServer, value))
-            {
                 _ = OnServerSelectedAsync(old, value);
-            }
         }
     }
 
@@ -38,18 +37,18 @@ public partial class ConsoleViewModel : ObservableObject
 
     public ConsoleViewModel()
     {
-        App.WebSocketService.ConsoleLineReceived += OnConsoleLine;
+        _logService = App.ConsoleLogService;
+        _logService.LineAdded += OnLineAdded;
     }
 
-    private void OnConsoleLine(string serverId, string line, long timestamp)
+    private void OnLineAdded(string serverId, ConsoleEntry entry)
     {
+        if (SelectedServer?.ServerId != serverId) return;
+
         Application.Current.Dispatcher.InvokeAsync(() =>
         {
-            if (SelectedServer?.ServerId != serverId) return;
-
-            ConsoleLines.Add($"[{DateTimeOffset.FromUnixTimeMilliseconds(timestamp > 0 ? timestamp : DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()).LocalDateTime:HH:mm:ss}] {line}");
-
-            while (ConsoleLines.Count > MaxConsoleLines)
+            ConsoleLines.Add(entry.Formatted);
+            while (ConsoleLines.Count > 10_000)
                 ConsoleLines.RemoveAt(0);
         });
     }
@@ -65,38 +64,40 @@ public partial class ConsoleViewModel : ObservableObject
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 AvailableServers.Clear();
-                var arr = result.ValueKind == JsonValueKind.Array ? result
+                var arr = result.ValueKind == System.Text.Json.JsonValueKind.Array ? result
                     : result.TryGetProperty("servers", out var sa) ? sa : default;
-                if (arr.ValueKind == JsonValueKind.Array)
+                if (arr.ValueKind == System.Text.Json.JsonValueKind.Array)
                 {
                     foreach (var s in arr.EnumerateArray())
                     {
                         AvailableServers.Add(new ServerInfo
                         {
-                            ServerId = s.TryGetProperty("serverId", out var sid) ? sid.GetString() ?? "" : "",
-                            ServerName = s.TryGetProperty("serverName", out var sn) ? sn.GetString() ?? "" : "",
+                            ServerId   = s.TryGetProperty("serverId",   out var sid) ? sid.GetString() ?? "" : "",
+                            ServerName = s.TryGetProperty("serverName", out var sn)  ? sn.GetString()  ?? "" : "",
                         });
                     }
                 }
-                if (AvailableServers.Count > 0)
+
+                // Restore previously selected server if possible, else pick first
+                var previousId = _selectedServer?.ServerId;
+                var match = previousId != null
+                    ? AvailableServers.FirstOrDefault(s => s.ServerId == previousId)
+                    : null;
+
+                if (match != null)
+                    SelectedServer = match;          // same server — don't clear console
+                else if (AvailableServers.Count > 0)
                     SelectedServer = AvailableServers[0];
             });
         }
-        catch
-        {
-            // Silently handle
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        catch { }
+        finally { IsLoading = false; }
     }
 
     private async Task OnServerSelectedAsync(ServerInfo? oldServer, ServerInfo? newServer)
     {
-        ConsoleLines.Clear();
-
-        if (oldServer != null)
+        // Unsubscribe old server from live streaming
+        if (oldServer != null && (newServer == null || oldServer.ServerId != newServer.ServerId))
         {
             try
             {
@@ -105,11 +106,17 @@ public partial class ConsoleViewModel : ObservableObject
                     new { serverId = oldServer.ServerId },
                     App.AuthService.SessionToken);
             }
-            catch { /* ignore */ }
+            catch { }
         }
 
+        // Load persisted buffer for new server (history survives page navigation)
+        ConsoleLines.Clear();
         if (newServer != null)
         {
+            var buffered = _logService.GetBuffer(newServer.ServerId);
+            foreach (var entry in buffered)
+                ConsoleLines.Add(entry.Formatted);
+
             try
             {
                 await App.WebSocketService.SendRequestAsync(
@@ -119,7 +126,8 @@ public partial class ConsoleViewModel : ObservableObject
             }
             catch (Exception ex)
             {
-                ConsoleLines.Add($"[ERROR] Failed to subscribe: {ex.Message}");
+                Application.Current.Dispatcher.Invoke(() =>
+                    ConsoleLines.Add($"[ERROR] Failed to subscribe: {ex.Message}"));
             }
         }
     }
@@ -128,10 +136,8 @@ public partial class ConsoleViewModel : ObservableObject
     private async Task SendCommandAsync()
     {
         if (SelectedServer == null || string.IsNullOrWhiteSpace(CommandText)) return;
-
         var cmd = CommandText.Trim();
         CommandText = "";
-
         try
         {
             await App.WebSocketService.SendRequestAsync(
@@ -141,16 +147,16 @@ public partial class ConsoleViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                ConsoleLines.Add($"[ERROR] {ex.Message}");
-            });
+            Application.Current.Dispatcher.Invoke(() =>
+                ConsoleLines.Add($"[ERROR] {ex.Message}"));
         }
     }
 
     [RelayCommand]
     private void ClearConsole()
     {
+        if (SelectedServer != null)
+            _logService.ClearBuffer(SelectedServer.ServerId);
         ConsoleLines.Clear();
     }
 }
