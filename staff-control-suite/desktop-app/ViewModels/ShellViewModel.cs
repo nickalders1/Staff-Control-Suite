@@ -54,7 +54,7 @@ public partial class ShellViewModel : ObservableObject
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 LatestVersion   = update.LatestVersion;
-                ReleaseUrl      = update.ReleaseUrl;
+                ReleaseUrl      = update.DownloadUrl;
                 UpdateAvailable = true;
             });
         }

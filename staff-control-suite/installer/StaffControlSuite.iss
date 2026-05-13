@@ -5,7 +5,9 @@
 ; ============================================================
 
 #define AppName      "Staff Control Suite"
+#ifndef AppVersion
 #define AppVersion   "1.0.0"
+#endif
 #define AppPublisher "Cable Hosting"
 #define AppURL       ""
 #define AppExeName   "StaffControlSuite.exe"

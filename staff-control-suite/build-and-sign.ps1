@@ -1,16 +1,14 @@
 # build-and-sign.ps1
-# Builds the Staff Control Suite desktop app, packages it with Inno Setup,
-# and optionally publishes a GitHub release.
+# Builds the Staff Control Suite desktop app and packages it with Inno Setup.
+# The output installer has the Mark of the Web removed so recipients don't get SmartScreen popups.
 #
 # Usage:
-#   .\build-and-sign.ps1                        # build only
-#   .\build-and-sign.ps1 -Version 1.2.0         # set version
-#   .\build-and-sign.ps1 -Version 1.2.0 -Release # build + push GitHub release
+#   .\build-and-sign.ps1
+#   .\build-and-sign.ps1 -Version 1.2.0
 
 param(
     [string] $Version       = "1.0.0",
-    [string] $InnoSetupPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
-    [switch] $Release                            # publish a GitHub release
+    [string] $InnoSetupPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 )
 
 Set-StrictMode -Version Latest
@@ -59,38 +57,17 @@ if ($LASTEXITCODE -ne 0) { throw "Inno Setup compiler failed with exit code $LAS
 Write-Host "  Installer: $InstallerExe" -ForegroundColor Green
 
 # --- Step 3: Remove Mark of the Web ---
-# Strips the Zone.Identifier ADS so recipients don't get a SmartScreen popup.
 Write-Host ""
 Write-Host "==> Step 3: Removing Mark of the Web from installer" -ForegroundColor Yellow
 Unblock-File -Path $InstallerExe
 Write-Host "  Done - no SmartScreen popup for recipients." -ForegroundColor Green
 
-# --- Step 4: Publish GitHub release (optional) ---
-if ($Release) {
-    Write-Host ""
-    Write-Host "==> Step 4: Publishing GitHub release v$Version" -ForegroundColor Yellow
-
-    $gh = Get-Command gh -ErrorAction SilentlyContinue
-    if (-not $gh) {
-        Write-Warning "GitHub CLI (gh) not found - skipping release. Install from https://cli.github.com"
-    } else {
-        # Create a git tag for this version
-        git tag "v$Version"
-        git push origin "v$Version"
-
-        # Create the GitHub release and upload the installer
-        gh release create "v$Version" $InstallerExe `
-            --title "Staff Control Suite v$Version" `
-            --notes "Release v$Version"
-
-        Write-Host "  GitHub release published: v$Version" -ForegroundColor Green
-    }
-} else {
-    Write-Host ""
-    Write-Host "  Tip: run with -Release to publish a GitHub release automatically" -ForegroundColor DarkGray
-}
-
 Write-Host ""
 Write-Host "==> Done!" -ForegroundColor Green
 Write-Host "    Executable : $AppExe"
 Write-Host "    Installer  : $InstallerExe"
+Write-Host ""
+Write-Host "Next steps:" -ForegroundColor Cyan
+Write-Host "  1. Upload $InstallerExe to your GitHub release (via github.com)"
+Write-Host "  2. Copy the download link and update your version Gist"
+Write-Host "     Gist format: { version: '$Version', downloadUrl: 'PASTE_LINK_HERE' }"

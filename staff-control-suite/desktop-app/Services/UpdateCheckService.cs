@@ -6,25 +6,27 @@ namespace StaffControlSuite.Services;
 
 public static class UpdateCheckService
 {
-    // TODO: change to your actual GitHub username/repo after pushing
-    private const string GitHubRepo = "Odsko/staff-control-suite";
-    private const string ApiUrl     = $"https://api.github.com/repos/{GitHubRepo}/releases/latest";
+    // Paste the raw URL of your public GitHub Gist here after creating it.
+    // See instructions in build-and-sign.ps1 for how to set this up.
+    private const string ManifestUrl = "https://gist.githubusercontent.com/nickalders1/69f959e7e7cf6c6f23bc688c07ebd06a/raw/c958cd73282c845c28014721298d4cd12be5fa53/version.json";
 
-    public record UpdateInfo(bool HasUpdate, string LatestVersion, string ReleaseUrl);
+    public record UpdateInfo(bool HasUpdate, string LatestVersion, string DownloadUrl);
 
     public static async Task<UpdateInfo> CheckAsync()
     {
+        if (ManifestUrl == "https://gist.githubusercontent.com/nickalders1/69f959e7e7cf6c6f23bc688c07ebd06a/raw/c958cd73282c845c28014721298d4cd12be5fa53/version.json")
+            return new UpdateInfo(false, "", "");
+
         try
         {
             using var client = new HttpClient();
             client.Timeout = TimeSpan.FromSeconds(8);
             client.DefaultRequestHeaders.UserAgent.ParseAdd("StaffControlSuite-UpdateCheck");
 
-            var json   = await client.GetStringAsync(ApiUrl);
-            var doc    = JsonDocument.Parse(json);
-            var tag    = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
-            var url    = doc.RootElement.GetProperty("html_url").GetString()  ?? "";
-            var latest = tag.TrimStart('v');
+            var json    = await client.GetStringAsync(ManifestUrl);
+            var doc     = JsonDocument.Parse(json);
+            var latest  = doc.RootElement.GetProperty("version").GetString()     ?? "";
+            var url     = doc.RootElement.GetProperty("downloadUrl").GetString() ?? "";
 
             var current   = GetCurrentVersion();
             var hasUpdate = Version.TryParse(latest, out var l)
@@ -35,7 +37,7 @@ public static class UpdateCheckService
         }
         catch
         {
-            // Network unavailable or GitHub down — silently skip
+            // Network unavailable or manifest unreachable — silently skip
             return new UpdateInfo(false, "", "");
         }
     }
