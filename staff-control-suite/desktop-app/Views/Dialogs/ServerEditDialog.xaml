@@ -1,0 +1,69 @@
+<UserControl x:Class="StaffControlSuite.Views.Dialogs.ServerEditDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Width="420">
+    <md:Card Background="#313244" Padding="24">
+        <StackPanel>
+            <TextBlock x:Name="TitleText" Text="Add Server"
+                       FontSize="18" FontWeight="SemiBold"
+                       Foreground="White" Margin="0,0,0,20"/>
+
+            <TextBox x:Name="ServerIdBox"
+                     md:HintAssist.Hint="Server ID (e.g. survival)"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     Foreground="White" Margin="0,0,0,12"/>
+
+            <TextBox x:Name="ServerNameBox"
+                     md:HintAssist.Hint="Display Name"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     Foreground="White" Margin="0,0,0,12"/>
+
+            <ComboBox x:Name="ServerTypeBox"
+                      md:HintAssist.Hint="Server Type"
+                      Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                      Foreground="White" Margin="0,0,0,12">
+                <ComboBoxItem Content="PAPER"/>
+                <ComboBoxItem Content="SPIGOT"/>
+                <ComboBoxItem Content="VANILLA"/>
+                <ComboBoxItem Content="FABRIC"/>
+                <ComboBoxItem Content="FORGE"/>
+            </ComboBox>
+
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="100"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0"
+                         x:Name="HostBox"
+                         md:HintAssist.Hint="Host"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                         Foreground="White"/>
+                <TextBox Grid.Column="2"
+                         x:Name="PortBox"
+                         md:HintAssist.Hint="Port"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                         Foreground="White"/>
+            </Grid>
+
+            <TextBlock x:Name="ErrorText" Text=""
+                       Foreground="#f38ba8" FontSize="12"
+                       Margin="0,0,0,12" TextWrapping="Wrap"
+                       Visibility="Collapsed"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="CANCEL"
+                        Style="{StaticResource MaterialDesignFlatButton}"
+                        Foreground="#6c7086"
+                        Click="CancelClick"
+                        Margin="0,0,8,0"/>
+                <Button Content="SAVE"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        Background="#89b4fa" Foreground="#1e1e2e"
+                        Click="SaveClick"/>
+            </StackPanel>
+        </StackPanel>
+    </md:Card>
+</UserControl>

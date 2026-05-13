@@ -1,0 +1,141 @@
+<UserControl x:Class="StaffControlSuite.Views.LoginView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:StaffControlSuite.Converters"
+             Background="#1e1e2e">
+
+    <UserControl.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#1e1e2e" Offset="0"/>
+                <GradientStop Color="#181825" Offset="1"/>
+            </LinearGradientBrush>
+        </Grid.Background>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Width="420" Margin="20">
+
+                <!-- Logo / Title -->
+                <StackPanel HorizontalAlignment="Center" Margin="0,40,0,32">
+                    <md:PackIcon Kind="ShieldAccount"
+                                 Width="56" Height="56"
+                                 Foreground="#89b4fa"
+                                 HorizontalAlignment="Center"
+                                 Margin="0,0,0,12"/>
+                    <TextBlock Text="Staff Control Suite"
+                               FontSize="28" FontWeight="Bold"
+                               Foreground="White"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Minecraft Server Management"
+                               FontSize="13"
+                               Foreground="#6c7086"
+                               HorizontalAlignment="Center"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <!-- Connection Card -->
+                <md:Card Padding="24" Margin="0,0,0,16"
+                         Background="#313244"
+                         md:ElevationAssist.Elevation="Dp4">
+                    <StackPanel>
+                        <TextBlock Text="Connection Settings"
+                                   FontSize="13" FontWeight="Medium"
+                                   Foreground="#89b4fa"
+                                   Margin="0,0,0,16"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="100"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox Grid.Column="0"
+                                     Text="{Binding ProxyHost, UpdateSourceTrigger=PropertyChanged}"
+                                     md:HintAssist.Hint="Proxy Host"
+                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                     Foreground="White"
+                                     IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
+
+                            <TextBox Grid.Column="2"
+                                     Text="{Binding ProxyPort, UpdateSourceTrigger=PropertyChanged}"
+                                     md:HintAssist.Hint="Port"
+                                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                     Foreground="White"
+                                     IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
+                        </Grid>
+                    </StackPanel>
+                </md:Card>
+
+                <!-- Login Card -->
+                <md:Card Padding="24"
+                         Background="#313244"
+                         md:ElevationAssist.Elevation="Dp4">
+                    <StackPanel>
+                        <TextBlock Text="Sign In"
+                                   FontSize="18" FontWeight="SemiBold"
+                                   Foreground="White"
+                                   Margin="0,0,0,20"/>
+
+                        <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                                 md:HintAssist.Hint="Username"
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 Foreground="White"
+                                 Margin="0,0,0,16"
+                                 IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
+
+                        <PasswordBox x:Name="PasswordBox"
+                                     md:HintAssist.Hint="Password"
+                                     Style="{StaticResource MaterialDesignOutlinedPasswordBox}"
+                                     Foreground="White"
+                                     Margin="0,0,0,16"
+                                     IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
+
+                        <!-- Error Message -->
+                        <Border Background="#3b0000" CornerRadius="4" Padding="12,8"
+                                Margin="0,0,0,16"
+                                Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="AlertCircle" Foreground="#f38ba8"
+                                             Width="16" Height="16" VerticalAlignment="Center"
+                                             Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding ErrorMessage}"
+                                           Foreground="#f38ba8"
+                                           FontSize="13"
+                                           TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Loading Indicator -->
+                        <ProgressBar IsIndeterminate="True"
+                                     Margin="0,0,0,16"
+                                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                                     Foreground="#89b4fa"/>
+
+                        <Button Content="CONNECT &amp; LOGIN"
+                                Command="{Binding LoginCommand}"
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="#89b4fa"
+                                Foreground="#1e1e2e"
+                                FontWeight="Bold"
+                                Height="44"
+                                IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
+                    </StackPanel>
+                </md:Card>
+
+                <TextBlock Text="Staff Control Suite v1.0"
+                           FontSize="11"
+                           Foreground="#45475a"
+                           HorizontalAlignment="Center"
+                           Margin="0,20,0,40"/>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

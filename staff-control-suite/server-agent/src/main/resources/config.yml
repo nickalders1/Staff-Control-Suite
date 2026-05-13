@@ -1,0 +1,8 @@
+serverId: "survival"
+serverName: "Survival"
+serverType: "survival"
+proxyHost: "localhost"
+proxyAgentPort: 8081
+agentToken: "CHANGE_ME_AGENT"
+reconnectDelaySeconds: 5
+heartbeatIntervalSeconds: 10

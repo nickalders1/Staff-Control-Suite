@@ -1,0 +1,6 @@
+name: StaffControlAgent
+version: 1.0.0
+main: com.staffcontrol.agent.StaffControlAgent
+api-version: 1.20
+description: Staff Control Suite - Server Agent
+author: StaffControl

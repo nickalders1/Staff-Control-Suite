@@ -1,0 +1,52 @@
+<UserControl x:Class="StaffControlSuite.Views.Dialogs.RoleEditDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Width="460">
+    <md:Card Background="#313244" Padding="24">
+        <StackPanel MaxHeight="600">
+            <TextBlock x:Name="TitleText" Text="Edit Role"
+                       FontSize="18" FontWeight="SemiBold"
+                       Foreground="White" Margin="0,0,0,20"/>
+
+            <TextBox x:Name="NameBox"
+                     md:HintAssist.Hint="Role ID (e.g. moderator)"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     Foreground="White" Margin="0,0,0,12"/>
+
+            <TextBox x:Name="DisplayNameBox"
+                     md:HintAssist.Hint="Display Name (e.g. Moderator)"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     Foreground="White" Margin="0,0,0,16"/>
+
+            <TextBlock Text="Permissions" FontSize="13" FontWeight="Medium"
+                       Foreground="#89b4fa" Margin="0,0,0,10"/>
+
+            <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+                <ItemsControl x:Name="PermissionsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox Content="{Binding DisplayName}"
+                                      IsChecked="{Binding IsChecked}"
+                                      Foreground="#cdd6f4"
+                                      Margin="0,3"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <TextBlock x:Name="ErrorText" Foreground="#f38ba8" FontSize="12"
+                       Margin="0,12,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                <Button Content="CANCEL"
+                        Style="{StaticResource MaterialDesignFlatButton}"
+                        Foreground="#6c7086" Click="CancelClick" Margin="0,0,8,0"/>
+                <Button Content="SAVE"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        Background="#a6e3a1" Foreground="#1e1e2e"
+                        Click="SaveClick"/>
+            </StackPanel>
+        </StackPanel>
+    </md:Card>
+</UserControl>

@@ -1,0 +1,154 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes">
+
+    <!-- ==================== COLORS ==================== -->
+    <SolidColorBrush x:Key="SidebarBackground" Color="#181825"/>
+    <SolidColorBrush x:Key="CardBackground"    Color="#313244"/>
+    <SolidColorBrush x:Key="MainBackground"    Color="#1e1e2e"/>
+    <SolidColorBrush x:Key="AccentBlue"        Color="#89b4fa"/>
+    <SolidColorBrush x:Key="AccentGreen"       Color="#a6e3a1"/>
+    <SolidColorBrush x:Key="AccentRed"         Color="#f38ba8"/>
+    <SolidColorBrush x:Key="TextPrimary"       Color="#cdd6f4"/>
+    <SolidColorBrush x:Key="TextSecondary"     Color="#6c7086"/>
+    <SolidColorBrush x:Key="Border"            Color="#313244"/>
+
+    <!-- ==================== WINDOW ==================== -->
+    <Style x:Key="AppWindowStyle" TargetType="Window">
+        <Setter Property="Background" Value="{StaticResource MainBackground}"/>
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+    </Style>
+
+    <!-- ==================== CARD ==================== -->
+    <Style x:Key="DashboardCardStyle" TargetType="md:Card">
+        <Setter Property="Background"  Value="{StaticResource CardBackground}"/>
+        <Setter Property="Padding"     Value="20"/>
+        <Setter Property="Margin"      Value="0,0,0,12"/>
+        <Setter Property="md:ElevationAssist.Elevation" Value="Dp2"/>
+    </Style>
+
+    <!-- ==================== SIDEBAR NAV ITEM ==================== -->
+    <Style x:Key="SidebarNavItemStyle" TargetType="ListBoxItem">
+        <Setter Property="Padding"          Value="16,10"/>
+        <Setter Property="Cursor"           Value="Hand"/>
+        <Setter Property="Background"       Value="Transparent"/>
+        <Setter Property="BorderThickness"  Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBoxItem">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            Margin="8,2"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="#2a2a4a"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="#252535"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ==================== CONSOLE OUTPUT ==================== -->
+    <Style x:Key="ConsoleTextBlockStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily"   Value="Consolas, Courier New, monospace"/>
+        <Setter Property="FontSize"     Value="12"/>
+        <Setter Property="Foreground"   Value="#a6e3a1"/>
+        <Setter Property="Background"   Value="Transparent"/>
+        <Setter Property="TextWrapping" Value="NoWrap"/>
+        <Setter Property="Margin"       Value="0,1"/>
+    </Style>
+
+    <Style x:Key="ConsoleContainerStyle" TargetType="Border">
+        <Setter Property="Background"       Value="#11111b"/>
+        <Setter Property="BorderBrush"      Value="{StaticResource Border}"/>
+        <Setter Property="BorderThickness"  Value="1"/>
+        <Setter Property="CornerRadius"     Value="4"/>
+        <Setter Property="Padding"          Value="12"/>
+    </Style>
+
+    <!-- ==================== STATUS BADGE ==================== -->
+    <Style x:Key="OnlineBadgeStyle" TargetType="Border">
+        <Setter Property="Background"   Value="#1a4a1a"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding"      Value="8,3"/>
+    </Style>
+
+    <Style x:Key="OfflineBadgeStyle" TargetType="Border">
+        <Setter Property="Background"   Value="#4a1a1a"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding"      Value="8,3"/>
+    </Style>
+
+    <!-- ==================== DATAGRID ==================== -->
+    <Style x:Key="DarkDataGridStyle" TargetType="DataGrid">
+        <Setter Property="Background"               Value="#181825"/>
+        <Setter Property="Foreground"               Value="{StaticResource TextPrimary}"/>
+        <Setter Property="BorderThickness"          Value="1"/>
+        <Setter Property="BorderBrush"              Value="{StaticResource Border}"/>
+        <Setter Property="RowBackground"            Value="#1e1e2e"/>
+        <Setter Property="AlternatingRowBackground" Value="#252535"/>
+        <Setter Property="GridLinesVisibility"      Value="Horizontal"/>
+        <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource Border}"/>
+        <Setter Property="CanUserAddRows"           Value="False"/>
+        <Setter Property="IsReadOnly"               Value="True"/>
+        <Setter Property="AutoGenerateColumns"      Value="False"/>
+        <Setter Property="SelectionMode"            Value="Single"/>
+    </Style>
+
+    <!-- DataGrid row style -->
+    <Style x:Key="DarkDataGridRowStyle" TargetType="DataGridRow">
+        <Setter Property="Background" Value="Transparent"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#2a2a3e"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="#2a3a5e"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- DataGrid cell style -->
+    <Style x:Key="DarkDataGridCellStyle" TargetType="DataGridCell">
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding"         Value="4"/>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ==================== SECTION HEADER ==================== -->
+    <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
+        <Setter Property="FontSize"     Value="16"/>
+        <Setter Property="FontWeight"   Value="SemiBold"/>
+        <Setter Property="Foreground"   Value="White"/>
+        <Setter Property="Margin"       Value="0,0,0,16"/>
+    </Style>
+
+    <!-- ==================== STAT VALUE ==================== -->
+    <Style x:Key="StatValueStyle" TargetType="TextBlock">
+        <Setter Property="FontSize"   Value="32"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
+
+    <Style x:Key="StatLabelStyle" TargetType="TextBlock">
+        <Setter Property="FontSize"   Value="13"/>
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+        <Setter Property="Margin"     Value="0,0,0,8"/>
+    </Style>
+
+
+</ResourceDictionary>

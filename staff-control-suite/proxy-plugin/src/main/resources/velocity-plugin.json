@@ -1,0 +1,9 @@
+{
+  "id": "staffcontrolproxy",
+  "name": "Staff Control Proxy",
+  "version": "1.0.0",
+  "main": "com.staffcontrol.proxy.StaffControlProxy",
+  "description": "Central gateway for Staff Control Suite",
+  "authors": ["StaffControl"],
+  "dependencies": []
+}

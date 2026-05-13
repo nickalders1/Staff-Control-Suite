@@ -1,0 +1,9 @@
+apiPort: 8080
+agentPort: 8081
+apiToken: "CHANGE_ME"
+agentToken: "CHANGE_ME_AGENT"
+allowedIps: []
+proxyName: "MyProxy"
+databaseType: sqlite
+databasePath: staffcontrol.db
+sessionExpiryHours: 24

@@ -1,0 +1,41 @@
+<UserControl x:Class="StaffControlSuite.Views.Dialogs.UserEditDialog"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+             Width="400">
+    <md:Card Background="#313244" Padding="24">
+        <StackPanel>
+            <TextBlock x:Name="TitleText" Text="Add User"
+                       FontSize="18" FontWeight="SemiBold"
+                       Foreground="White" Margin="0,0,0,20"/>
+
+            <TextBox x:Name="UsernameBox"
+                     md:HintAssist.Hint="Username"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                     Foreground="White" Margin="0,0,0,12"/>
+
+            <PasswordBox x:Name="PasswordBox"
+                         md:HintAssist.Hint="Password (leave blank to keep)"
+                         Style="{StaticResource MaterialDesignOutlinedPasswordBox}"
+                         Foreground="White" Margin="0,0,0,12"/>
+
+            <ComboBox x:Name="RoleCombo"
+                      md:HintAssist.Hint="Role"
+                      Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                      Foreground="White" Margin="0,0,0,20"/>
+
+            <TextBlock x:Name="ErrorText" Foreground="#f38ba8" FontSize="12"
+                       Margin="0,0,0,12" TextWrapping="Wrap" Visibility="Collapsed"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="CANCEL"
+                        Style="{StaticResource MaterialDesignFlatButton}"
+                        Foreground="#6c7086" Click="CancelClick" Margin="0,0,8,0"/>
+                <Button Content="SAVE"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        Background="#89b4fa" Foreground="#1e1e2e"
+                        Click="SaveClick"/>
+            </StackPanel>
+        </StackPanel>
+    </md:Card>
+</UserControl>

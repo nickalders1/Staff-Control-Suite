@@ -1,0 +1,18 @@
+<Window x:Class="StaffControlSuite.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="Staff Control Suite"
+        Width="1280" Height="800"
+        MinWidth="1000" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#1e1e2e"
+        TextElement.Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
+        TextElement.FontFamily="{DynamicResource MaterialDesignFont}"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Auto"
+        md:DialogHost.DialogBackground="#2a2a3e">
+    <md:DialogHost Identifier="RootDialogHost" CloseOnClickAway="True">
+        <ContentControl x:Name="MainContent" />
+    </md:DialogHost>
+</Window>
