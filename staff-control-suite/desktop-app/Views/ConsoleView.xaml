@@ -3,22 +3,36 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:StaffControlSuite.Converters"
-             Background="#1e1e2e">
+             Background="{DynamicResource AppBackgroundBrush}">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:InvertedBoolToVisibilityConverter x:Key="InvertedBoolToVisibilityConverter"/>
     </UserControl.Resources>
 
-    <Grid Margin="24">
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource PageFadeIn}"/>
+        </EventTrigger>
+    </UserControl.Triggers>
+
+    <Grid Margin="28">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Page header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Console" Style="{StaticResource PageTitleStyle}"/>
+            <TextBlock Text="Live server output and command dispatch"
+                       Style="{StaticResource PageSubtitleStyle}"/>
+        </StackPanel>
+
         <!-- Toolbar -->
-        <Grid Grid.Row="0" Margin="0,0,0,12">
+        <Grid Grid.Row="1" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal">
                 <ComboBox ItemsSource="{Binding AvailableServers}"
                           SelectedItem="{Binding SelectedServer}"
@@ -26,18 +40,19 @@
                           md:HintAssist.Hint="Select Server"
                           Style="{StaticResource MaterialDesignOutlinedComboBox}"
                           Width="200"
-                          Foreground="White"
+                          Foreground="{DynamicResource TextPrimaryBrush}"
                           Margin="0,0,12,0"/>
 
                 <CheckBox Content="Auto-scroll"
                           IsChecked="{Binding AutoScroll}"
-                          Foreground="#cdd6f4"
+                          Foreground="{DynamicResource TextPrimaryBrush}"
                           Margin="0,0,12,0"
                           VerticalAlignment="Center"/>
 
                 <Button Command="{Binding ClearConsoleCommand}"
                         Style="{StaticResource MaterialDesignOutlinedButton}"
-                        Foreground="#f38ba8" BorderBrush="#f38ba8">
+                        Foreground="{DynamicResource DangerBrush}"
+                        BorderBrush="{DynamicResource DangerBrush}">
                     <StackPanel Orientation="Horizontal">
                         <md:PackIcon Kind="Delete" Width="16" Height="16"
                                      VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -45,30 +60,31 @@
                     </StackPanel>
                 </Button>
 
-                <ProgressBar IsIndeterminate="True" Width="60" Height="4"
-                             Margin="12,0,0,0"
+                <ProgressBar IsIndeterminate="True" Width="60" Height="3"
+                             Margin="12,0,0,0" VerticalAlignment="Center"
                              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                             Foreground="#89b4fa"/>
+                             Foreground="{DynamicResource AccentBrush}"/>
             </StackPanel>
         </Grid>
 
-        <!-- Console Output -->
-        <Border Grid.Row="1"
-                Background="#11111b"
-                BorderBrush="#313244"
+        <!-- Console output -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource ConsoleBgBrush}"
+                BorderBrush="{DynamicResource SubtleBorderBrush}"
                 BorderThickness="1"
-                CornerRadius="4">
+                CornerRadius="8"
+                Effect="{StaticResource SubtleShadow}">
             <ScrollViewer x:Name="ConsoleScroll"
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Auto"
-                          Padding="12">
+                          Padding="14">
                 <ItemsControl ItemsSource="{Binding ConsoleLines}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}"
                                        FontFamily="Consolas, Courier New, monospace"
                                        FontSize="12"
-                                       Foreground="#a6e3a1"
+                                       Foreground="{DynamicResource SuccessBrush}"
                                        TextWrapping="NoWrap"
                                        Margin="0,1"/>
                         </DataTemplate>
@@ -77,8 +93,8 @@
             </ScrollViewer>
         </Border>
 
-        <!-- Command Input -->
-        <Grid Grid.Row="2" Margin="0,12,0,0"
+        <!-- Command input -->
+        <Grid Grid.Row="3" Margin="0,12,0,0"
               Visibility="{Binding HasCommandPermission, Converter={StaticResource BoolToVisibilityConverter}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -92,15 +108,17 @@
                      md:HintAssist.Hint="Enter command..."
                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
                      FontFamily="Consolas, Courier New, monospace"
-                     Foreground="White"
-                     Background="#11111b"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     Background="{DynamicResource ConsoleBgBrush}"
                      KeyDown="CommandInput_KeyDown"/>
 
             <Button Grid.Column="2"
                     Command="{Binding SendCommandCommand}"
                     Style="{StaticResource MaterialDesignRaisedButton}"
-                    Background="#89b4fa" Foreground="#1e1e2e"
-                    Height="44" Padding="16,0">
+                    Background="{DynamicResource AccentBrush}"
+                    Foreground="#0f0f1a"
+                    FontWeight="SemiBold"
+                    Height="44" Padding="18,0">
                 <StackPanel Orientation="Horizontal">
                     <md:PackIcon Kind="Send" Width="16" Height="16"
                                  VerticalAlignment="Center" Margin="0,0,6,0"/>

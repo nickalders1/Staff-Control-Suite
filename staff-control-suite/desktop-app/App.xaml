@@ -53,16 +53,6 @@
             <SolidColorBrush x:Key="PurpleBadgeBgBrush"   Color="#2a1a3a"/>
             <SolidColorBrush x:Key="MutedBadgeBgBrush"    Color="#2a2a35"/>
 
-            <!-- ── Card shadow effect (shared, freezable) ── -->
-            <DropShadowEffect x:Key="CardShadow"
-                              Color="#000000" BlurRadius="14" ShadowDepth="2"
-                              Opacity="0.32" Direction="270"/>
-            <DropShadowEffect x:Key="ElevatedShadow"
-                              Color="#000000" BlurRadius="24" ShadowDepth="4"
-                              Opacity="0.4" Direction="270"/>
-            <DropShadowEffect x:Key="SubtleShadow"
-                              Color="#000000" BlurRadius="8" ShadowDepth="1"
-                              Opacity="0.2" Direction="270"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

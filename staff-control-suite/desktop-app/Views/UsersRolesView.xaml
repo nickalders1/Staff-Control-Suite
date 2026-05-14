@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:StaffControlSuite.Converters"
-             Background="#1e1e2e">
+             Background="{DynamicResource AppBackgroundBrush}">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -11,26 +11,47 @@
         <converters:StatusToColorConverter x:Key="StatusToColorConverter"/>
     </UserControl.Resources>
 
-    <Grid Margin="24">
-        <TabControl Style="{StaticResource MaterialDesignTabControl}"
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource PageFadeIn}"/>
+        </EventTrigger>
+    </UserControl.Triggers>
+
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Page header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Users &amp; Roles" Style="{StaticResource PageTitleStyle}"/>
+            <TextBlock Text="Manage staff accounts and permission roles"
+                       Style="{StaticResource PageSubtitleStyle}"/>
+        </StackPanel>
+
+        <TabControl Grid.Row="1"
+                    Style="{StaticResource MaterialDesignTabControl}"
                     Background="Transparent"
                     BorderThickness="0">
 
             <!-- Users Tab -->
             <TabItem Header="USERS"
-                     Foreground="White"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
                      Style="{StaticResource MaterialDesignTabItem}">
                 <Grid Margin="0,16,0,0">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Users Toolbar -->
+                    <!-- Users toolbar -->
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
                         <Button Command="{Binding LoadUsersCommand}"
                                 Style="{StaticResource MaterialDesignOutlinedButton}"
-                                Foreground="#89b4fa" BorderBrush="#89b4fa"
+                                Foreground="{DynamicResource AccentBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}"
                                 Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="Refresh" Width="16" Height="16"
@@ -41,7 +62,8 @@
 
                         <Button Command="{Binding CreateUserCommand}"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
-                                Background="#89b4fa" Foreground="#1e1e2e"
+                                Background="{DynamicResource AccentBrush}"
+                                Foreground="#0f0f1a"
                                 Visibility="{Binding CanManageUsers, Converter={StaticResource BoolToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="AccountPlus" Width="16" Height="16"
@@ -50,79 +72,92 @@
                             </StackPanel>
                         </Button>
 
-                        <ProgressBar IsIndeterminate="True" Width="60" Height="4"
-                                     Margin="12,0,0,0"
+                        <ProgressBar IsIndeterminate="True" Width="60" Height="3"
+                                     Margin="12,0,0,0" VerticalAlignment="Center"
                                      Visibility="{Binding IsLoadingUsers, Converter={StaticResource BoolToVisibilityConverter}}"
-                                     Foreground="#89b4fa"/>
+                                     Foreground="{DynamicResource AccentBrush}"/>
                     </StackPanel>
 
-                    <!-- Error -->
-                    <Border Grid.Row="0" Background="#3b0000" CornerRadius="4" Padding="12,8"
-                            Margin="0,48,0,0"
+                    <!-- Error bar -->
+                    <Border Grid.Row="1" Style="{StaticResource ErrorBarStyle}"
+                            Margin="0,0,0,10"
                             Visibility="{Binding HasUserError, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <TextBlock Text="{Binding UserErrorMessage}"
-                                   Foreground="#f38ba8" FontSize="12"/>
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon Kind="AlertCircle" Foreground="{DynamicResource DangerBrush}"
+                                         Width="16" Height="16" VerticalAlignment="Center"
+                                         Margin="0,0,8,0"/>
+                            <TextBlock Text="{Binding UserErrorMessage}"
+                                       Foreground="{DynamicResource DangerBrush}" FontSize="12"/>
+                        </StackPanel>
                     </Border>
 
                     <!-- Users DataGrid -->
-                    <DataGrid Grid.Row="1"
-                              ItemsSource="{Binding Users}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              IsReadOnly="True"
-                              Background="#181825"
-                              Foreground="#cdd6f4"
-                              BorderThickness="1" BorderBrush="#313244"
-                              RowBackground="#1e1e2e"
-                              AlternatingRowBackground="#252535"
-                              GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="#313244"
-                              ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}">
-
+                    <DataGrid Grid.Row="2"
+                              Style="{StaticResource AppDataGridStyle}"
+                              ItemsSource="{Binding Users}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="*">
+                            <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="*" MinWidth="120">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
+                                        <Setter Property="Margin" Value="10,0"/>
                                         <Setter Property="FontWeight" Value="Medium"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="Role" Binding="{Binding RoleName}" Width="120">
+                            <DataGridTextColumn Header="Role" Binding="{Binding RoleName}" Width="140" MinWidth="100">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#cba6f7"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PurpleBrush}"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTemplateColumn Header="Status" Width="90">
+                            <!-- Status pill -->
+                            <DataGridTemplateColumn Header="Status" Width="100" MinWidth="80">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding StatusDisplay}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="8,0" FontSize="12"
-                                                   Foreground="{Binding IsActive, Converter={StaticResource StatusToColorConverter}}"/>
+                                        <Border Margin="6,4">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource PillBadgeStyle}">
+                                                    <Setter Property="Background" Value="{DynamicResource MutedBadgeBgBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                            <Setter Property="Background" Value="{DynamicResource SuccessBadgeBgBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                                            <Setter Property="Background" Value="{DynamicResource DangerBadgeBgBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding StatusDisplay}"
+                                                       Foreground="{Binding IsActive, Converter={StaticResource StatusToColorConverter}}"
+                                                       FontWeight="SemiBold" FontSize="11"/>
+                                        </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="Created" Binding="{Binding CreatedAtDisplay}" Width="110">
+                            <DataGridTextColumn Header="Created" Binding="{Binding CreatedAtDisplay}" Width="155" MinWidth="120">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#6c7086"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                        <Setter Property="FontFamily" Value="Consolas"/>
+                                        <Setter Property="FontSize" Value="11"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <!-- Actions -->
-                            <DataGridTemplateColumn Header="Actions" Width="100"
+                            <DataGridTemplateColumn Header="Actions" Width="90" MinWidth="80"
                                                     Visibility="{Binding DataContext.CanManageUsers,
                                                         RelativeSource={RelativeSource AncestorType=UserControl},
                                                         Converter={StaticResource BoolToVisibilityConverter}}">
@@ -133,16 +168,18 @@
                                                         RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource MaterialDesignIconButton}"
-                                                    Foreground="#89b4fa" Width="28" Height="28"
-                                                    ToolTip="Edit">
+                                                    Foreground="{DynamicResource AccentBrush}"
+                                                    Width="28" Height="28"
+                                                    ToolTip="Edit user">
                                                 <md:PackIcon Kind="Pencil" Width="14" Height="14"/>
                                             </Button>
                                             <Button Command="{Binding DataContext.DeleteUserCommand,
                                                         RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource MaterialDesignIconButton}"
-                                                    Foreground="#f38ba8" Width="28" Height="28"
-                                                    ToolTip="Delete">
+                                                    Foreground="{DynamicResource DangerBrush}"
+                                                    Width="28" Height="28"
+                                                    ToolTip="Delete user">
                                                 <md:PackIcon Kind="Delete" Width="14" Height="14"/>
                                             </Button>
                                         </StackPanel>
@@ -156,7 +193,7 @@
 
             <!-- Roles Tab -->
             <TabItem Header="ROLES"
-                     Foreground="White"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
                      Style="{StaticResource MaterialDesignTabItem}">
                 <Grid Margin="0,16,0,0">
                     <Grid.RowDefinitions>
@@ -164,11 +201,12 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Roles Toolbar -->
+                    <!-- Roles toolbar -->
                     <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
                         <Button Command="{Binding LoadRolesCommand}"
                                 Style="{StaticResource MaterialDesignOutlinedButton}"
-                                Foreground="#89b4fa" BorderBrush="#89b4fa"
+                                Foreground="{DynamicResource AccentBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}"
                                 Margin="0,0,8,0">
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="Refresh" Width="16" Height="16"
@@ -179,7 +217,8 @@
 
                         <Button Command="{Binding CreateRoleCommand}"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
-                                Background="#a6e3a1" Foreground="#1e1e2e"
+                                Background="{DynamicResource SuccessBrush}"
+                                Foreground="#0f0f1a"
                                 Visibility="{Binding IsOwner, Converter={StaticResource BoolToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="Plus" Width="16" Height="16"
@@ -188,68 +227,64 @@
                             </StackPanel>
                         </Button>
 
-                        <ProgressBar IsIndeterminate="True" Width="60" Height="4"
-                                     Margin="12,0,0,0"
+                        <ProgressBar IsIndeterminate="True" Width="60" Height="3"
+                                     Margin="12,0,0,0" VerticalAlignment="Center"
                                      Visibility="{Binding IsLoadingRoles, Converter={StaticResource BoolToVisibilityConverter}}"
-                                     Foreground="#89b4fa"/>
+                                     Foreground="{DynamicResource AccentBrush}"/>
                     </StackPanel>
 
                     <!-- Roles DataGrid -->
                     <DataGrid Grid.Row="1"
-                              ItemsSource="{Binding Roles}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              IsReadOnly="True"
-                              Background="#181825"
-                              Foreground="#cdd6f4"
-                              BorderThickness="1" BorderBrush="#313244"
-                              RowBackground="#1e1e2e"
-                              AlternatingRowBackground="#252535"
-                              GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="#313244"
-                              ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}">
-
+                              Style="{StaticResource AppDataGridStyle}"
+                              ItemsSource="{Binding Roles}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="120">
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="130" MinWidth="100">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#89b4fa"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                                        <Setter Property="FontWeight" Value="Medium"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="*">
+                            <DataGridTextColumn Header="Display Name" Binding="{Binding DisplayName}" Width="*" MinWidth="120">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="Permissions" Binding="{Binding PermissionCount}" Width="110">
+                            <DataGridTextColumn Header="Permissions" Binding="{Binding PermissionCount}" Width="120" MinWidth="90">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#6c7086"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                        <Setter Property="HorizontalAlignment" Value="Right"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="Created" Binding="{Binding CreatedAtDisplay}" Width="110">
+                            <DataGridTextColumn Header="Created" Binding="{Binding CreatedAtDisplay}" Width="155" MinWidth="120">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#6c7086"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                        <Setter Property="FontFamily" Value="Consolas"/>
+                                        <Setter Property="FontSize" Value="11"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTemplateColumn Header="Actions" Width="100"
+                            <DataGridTemplateColumn Header="Actions" Width="90" MinWidth="80"
                                                     Visibility="{Binding DataContext.IsOwner,
                                                         RelativeSource={RelativeSource AncestorType=UserControl},
                                                         Converter={StaticResource BoolToVisibilityConverter}}">
@@ -260,16 +295,18 @@
                                                         RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource MaterialDesignIconButton}"
-                                                    Foreground="#89b4fa" Width="28" Height="28"
-                                                    ToolTip="Edit Permissions">
+                                                    Foreground="{DynamicResource AccentBrush}"
+                                                    Width="28" Height="28"
+                                                    ToolTip="Edit permissions">
                                                 <md:PackIcon Kind="Pencil" Width="14" Height="14"/>
                                             </Button>
                                             <Button Command="{Binding DataContext.DeleteRoleCommand,
                                                         RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
                                                     Style="{StaticResource MaterialDesignIconButton}"
-                                                    Foreground="#f38ba8" Width="28" Height="28"
-                                                    ToolTip="Delete"
+                                                    Foreground="{DynamicResource DangerBrush}"
+                                                    Width="28" Height="28"
+                                                    ToolTip="Delete role"
                                                     IsEnabled="{Binding IsSystemRole, Converter={StaticResource InvertedBoolConverter}}">
                                                 <md:PackIcon Kind="Delete" Width="14" Height="14"/>
                                             </Button>
