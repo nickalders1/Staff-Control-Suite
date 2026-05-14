@@ -3,6 +3,8 @@ package com.staffcontrol.agent;
 import com.staffcontrol.agent.config.AgentConfig;
 import com.staffcontrol.agent.console.ConsoleCapture;
 import com.staffcontrol.agent.info.ServerInfoCollector;
+import com.staffcontrol.agent.listeners.MuteListener;
+import com.staffcontrol.agent.moderation.MuteManager;
 import com.staffcontrol.agent.proxy.ProxyClient;
 import com.staffcontrol.agent.sync.PlayerSyncManager;
 import org.bukkit.Bukkit;
@@ -16,6 +18,7 @@ public class StaffControlAgent extends JavaPlugin {
     private ConsoleCapture consoleCapture;
     private ServerInfoCollector serverInfoCollector;
     private PlayerSyncManager playerSyncManager;
+    private MuteManager muteManager;
     private BukkitTask heartbeatTask;
 
     @Override
@@ -24,8 +27,10 @@ public class StaffControlAgent extends JavaPlugin {
 
         agentConfig = new AgentConfig(this);
         serverInfoCollector = new ServerInfoCollector(this);
+        muteManager = new MuteManager();
 
         playerSyncManager = new PlayerSyncManager(agentConfig, this);
+        getServer().getPluginManager().registerEvents(new MuteListener(this), this);
 
         try {
             proxyClient = new ProxyClient(agentConfig, this);
@@ -55,7 +60,7 @@ public class StaffControlAgent extends JavaPlugin {
         consoleCapture = new ConsoleCapture(proxyClient);
         consoleCapture.startCapture();
 
-        getLogger().info("StaffControlAgent v1.1.0 enabled, connecting to proxy at "
+        getLogger().info("StaffControlAgent v1.1.3 enabled, connecting to proxy at "
                 + agentConfig.getProxyHost() + ":" + agentConfig.getProxyAgentPort());
     }
 
@@ -72,5 +77,6 @@ public class StaffControlAgent extends JavaPlugin {
     public ConsoleCapture getConsoleCapture()        { return consoleCapture; }
     public ServerInfoCollector getServerInfoCollector() { return serverInfoCollector; }
     public PlayerSyncManager getPlayerSyncManager() { return playerSyncManager; }
+    public MuteManager getMuteManager()             { return muteManager; }
     public BukkitTask getHeartbeatTask()             { return heartbeatTask; }
 }

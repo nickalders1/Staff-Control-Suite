@@ -82,6 +82,19 @@ public class FirstLetterConverter : IValueConverter
 }
 
 /// <summary>
+/// Shows when a collection count is zero, collapses when non-zero. Used for empty-state placeholders.
+/// </summary>
+[ValueConversion(typeof(int), typeof(Visibility))]
+public class ZeroCountToVisibilityConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        => value is int n && n > 0 ? Visibility.Collapsed : Visibility.Visible;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
 /// Collapses a TextBlock/element when the bound string is null or empty.
 /// </summary>
 [ValueConversion(typeof(string), typeof(Visibility))]

@@ -21,12 +21,17 @@ import com.staffcontrol.proxy.model.PunishmentPreset;
 import com.staffcontrol.proxy.moderation.ModerationManager;
 import com.staffcontrol.proxy.permission.PermissionCache;
 import com.staffcontrol.proxy.player.PlayerManager;
+import com.velocitypowered.api.proxy.ProxyServer;
+import net.kyori.adventure.text.Component;
 import org.java_websocket.WebSocket;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Base64;
 import java.util.logging.Logger;
@@ -43,12 +48,16 @@ public class AppMessageHandler {
     private final ProxyConfig config;
     private final Logger logger;
     private final ModerationManager moderationManager;
+    private final ProxyServer proxyServer;
+
+    private static final DateTimeFormatter BAN_DATE_FMT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm 'UTC'").withZone(ZoneId.of("UTC"));
 
     public AppMessageHandler(DatabaseManager database, AuthManager authManager,
                               AgentManager agentManager, AuditLogger auditLogger,
                               AppWebSocketServer wsServer, PlayerManager playerManager,
                               PermissionCache permissionCache, ProxyConfig config, Logger logger,
-                              ModerationManager moderationManager) {
+                              ModerationManager moderationManager, ProxyServer proxyServer) {
         this.database = database;
         this.authManager = authManager;
         this.agentManager = agentManager;
@@ -59,6 +68,7 @@ public class AppMessageHandler {
         this.config = config;
         this.logger = logger;
         this.moderationManager = moderationManager;
+        this.proxyServer = proxyServer;
     }
 
     public void handle(WebSocket ws, JsonObject message, ClientSession session) {
@@ -87,6 +97,7 @@ public class AppMessageHandler {
                 case "console.unsubscribe" -> handleConsoleUnsubscribe(ws, requestId, payload, session);
                 case "console.command"     -> handleConsoleCommand(ws, requestId, payload, session);
                 case "players.list"        -> handlePlayersList(ws, requestId, payload, session);
+                case "players.history"     -> handlePlayersHistory(ws, requestId, payload, session);
                 case "players.details"     -> handlePlayersDetails(ws, requestId, payload, session);
                 case "users.list"          -> handleUsersList(ws, requestId, payload, session);
                 case "users.create"        -> handleUsersCreate(ws, requestId, payload, session);
@@ -402,6 +413,31 @@ public class AppMessageHandler {
         resp.add("players", players);
         resp.addProperty("total", players.size());
         wsServer.sendResponse(ws, requestId, resp);
+    }
+
+    private void handlePlayersHistory(WebSocket ws, String requestId, JsonObject payload, ClientSession session) {
+        if (!requireAuth(ws, requestId, session)) return;
+        if (!requirePermission(ws, requestId, session, "players.view")) return;
+
+        int page = 1, limit = 200;
+        String search = getString(payload, "search");
+        if (payload.has("page"))  try { page  = payload.get("page").getAsInt();  } catch (Exception ignored) {}
+        if (payload.has("limit")) try { limit = payload.get("limit").getAsInt(); } catch (Exception ignored) {}
+        if (limit > 500) limit = 500;
+
+        try {
+            List<Map<String, Object>> rows = database.getAllPlayersHistory(page, limit, search);
+            JsonArray players = new JsonArray();
+            for (Map<String, Object> row : rows) players.add(PlayerInfo.fromDatabase(row).toJson());
+
+            JsonObject resp = new JsonObject();
+            resp.add("players", players);
+            resp.addProperty("total", players.size());
+            wsServer.sendResponse(ws, requestId, resp);
+        } catch (SQLException e) {
+            logger.severe("[AppMH] players.history DB error: " + e.getMessage());
+            wsServer.sendError(ws, requestId, "DATABASE_ERROR", "Failed to retrieve player history");
+        }
     }
 
     private void handlePlayersDetails(WebSocket ws, String requestId, JsonObject payload, ClientSession session) {
@@ -893,7 +929,7 @@ public class AppMessageHandler {
         if (session.hasPermission("moderation.view_ip")) {
             String rawIp = getString(payload, "targetIp");
             if (rawIp != null && !rawIp.isBlank()) {
-                targetIpHash = hashIp(rawIp);
+                targetIpHash = ModerationManager.hashIp(rawIp);
             }
         }
 
@@ -928,18 +964,36 @@ public class AppMessageHandler {
                 }
             }
 
-            // If KICK — send kick command to all connected agents
+            // KICK — send kick command through agents
             if ("KICK".equals(actionType)) {
                 String kickCmd = "kick " + targetName + " " + reason;
                 if (targetServer != null && !targetServer.isBlank() && !"global".equals(targetServer)) {
                     agentManager.sendCommand(targetServer, kickCmd);
                 } else {
                     for (AgentConnection agent : agentManager.getAllAgents()) {
-                        if (agent.isConnected() && agent.isRegistered()) {
+                        if (agent.isConnected() && agent.isRegistered())
                             agentManager.sendCommand(agent.getServerId(), kickCmd);
-                        }
                     }
                 }
+            }
+
+            // BAN / TEMP_BAN / IP_BAN — disconnect via Velocity with proper ban screen
+            if ("BAN".equals(actionType) || "TEMP_BAN".equals(actionType)
+                    || "IP_BAN".equals(actionType) || "TEMP_IP_BAN".equals(actionType)) {
+                String banMsg = buildBanMessage(actionType, reason, expiresAt);
+                Component disconnectComponent = Component.text(banMsg);
+                proxyServer.getPlayer(targetName)
+                        .ifPresent(p -> p.disconnect(disconnectComponent));
+            }
+
+            // WARN — notify player in-game if online
+            if ("WARN".equals(actionType)) {
+                agentManager.broadcastWarn(targetName, reason);
+            }
+
+            // MUTE / TEMP_MUTE — notify agents to block chat
+            if ("MUTE".equals(actionType) || "TEMP_MUTE".equals(actionType)) {
+                agentManager.broadcastMute(targetName, reason, expiresAt);
             }
 
             // Audit log
@@ -1092,6 +1146,11 @@ public class AppMessageHandler {
                     auditAction, targetName,
                     "Revoked punishment #" + punishmentId + " | Reason: " + revokeReason,
                     session.getIpAddress());
+
+            // Notify agents to lift an in-game mute
+            if (actionType != null && actionType.contains("MUTE")) {
+                agentManager.broadcastUnmute(targetName);
+            }
 
             // Broadcast revocation event
             JsonObject eventPayload = new JsonObject();
@@ -1498,13 +1557,19 @@ public class AppMessageHandler {
         return val instanceof Number ? ((Number) val).intValue() : 0;
     }
 
-    public static String hashIp(String ip) {
-        try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(ip.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            return java.util.Base64.getEncoder().encodeToString(digest);
-        } catch (Exception e) {
-            return ip;
+    private String buildBanMessage(String actionType, String reason, long expiresAt) {
+        StringBuilder msg = new StringBuilder();
+        if ("IP_BAN".equals(actionType) || "TEMP_IP_BAN".equals(actionType)) {
+            msg.append("You are IP-banned from this network.\n");
+        } else {
+            msg.append("You are banned from this network.\n");
         }
+        msg.append("Reason: ").append(reason != null ? reason : "No reason provided");
+        if (expiresAt > 0) {
+            msg.append("\nExpires: ").append(BAN_DATE_FMT.format(Instant.ofEpochMilli(expiresAt)));
+        } else {
+            msg.append("\nDuration: Permanent");
+        }
+        return msg.toString();
     }
 }

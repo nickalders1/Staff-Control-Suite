@@ -91,6 +91,42 @@ public class AgentManager {
         return false;
     }
 
+    public void broadcastMute(String playerName, String reason, long expiresAt) {
+        JsonObject msg = new JsonObject();
+        msg.addProperty("type", "moderation.mute");
+        JsonObject payload = new JsonObject();
+        payload.addProperty("playerName", playerName);
+        payload.addProperty("reason", reason != null ? reason : "");
+        payload.addProperty("expiresAt", expiresAt);
+        msg.add("payload", payload);
+        for (AgentConnection agent : connections.values()) {
+            if (agent.isConnected() && agent.isRegistered()) agent.send(msg);
+        }
+    }
+
+    public void broadcastWarn(String playerName, String reason) {
+        JsonObject msg = new JsonObject();
+        msg.addProperty("type", "moderation.warn");
+        JsonObject payload = new JsonObject();
+        payload.addProperty("playerName", playerName);
+        payload.addProperty("reason", reason != null ? reason : "");
+        msg.add("payload", payload);
+        for (AgentConnection agent : connections.values()) {
+            if (agent.isConnected() && agent.isRegistered()) agent.send(msg);
+        }
+    }
+
+    public void broadcastUnmute(String playerName) {
+        JsonObject msg = new JsonObject();
+        msg.addProperty("type", "moderation.unmute");
+        JsonObject payload = new JsonObject();
+        payload.addProperty("playerName", playerName);
+        msg.add("payload", payload);
+        for (AgentConnection agent : connections.values()) {
+            if (agent.isConnected() && agent.isRegistered()) agent.send(msg);
+        }
+    }
+
     public boolean isAgentOnline(String serverId) {
         Optional<AgentConnection> opt = getAgent(serverId);
         return opt.isPresent() && opt.get().isConnected() && opt.get().isRegistered();

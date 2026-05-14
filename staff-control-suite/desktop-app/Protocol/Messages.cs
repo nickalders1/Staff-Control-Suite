@@ -16,6 +16,7 @@ public static class MessageTypes
     public const string ConsoleUnsubscribe = "console.unsubscribe";
     public const string ConsoleCommand = "console.command";
     public const string PlayersList = "players.list";
+    public const string PlayersHistory = "players.history";
     public const string PlayersDetails = "players.details";
     public const string UsersList = "users.list";
     public const string UsersCreate = "users.create";

@@ -6,16 +6,13 @@ namespace StaffControlSuite.Services;
 
 public static class UpdateCheckService
 {
-    // Paste the raw URL of your public GitHub Gist here after creating it.
-    // See instructions in build-and-sign.ps1 for how to set this up.
-    private const string ManifestUrl = "https://gist.githubusercontent.com/nickalders1/69f959e7e7cf6c6f23bc688c07ebd06a/raw/c958cd73282c845c28014721298d4cd12be5fa53/version.json";
+    // Always-latest raw URL — no commit hash so every Gist update is picked up immediately.
+    private const string ManifestUrl = "https://gist.githubusercontent.com/nickalders1/69f959e7e7cf6c6f23bc688c07ebd06a/raw/version.json";
 
     public record UpdateInfo(bool HasUpdate, string LatestVersion, string DownloadUrl);
 
     public static async Task<UpdateInfo> CheckAsync()
     {
-        if (ManifestUrl == "https://gist.githubusercontent.com/nickalders1/69f959e7e7cf6c6f23bc688c07ebd06a/raw/c958cd73282c845c28014721298d4cd12be5fa53/version.json")
-            return new UpdateInfo(false, "", "");
 
         try
         {

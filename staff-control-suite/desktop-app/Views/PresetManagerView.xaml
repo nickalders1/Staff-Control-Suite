@@ -300,7 +300,26 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Header="Delete" Width="80"
+                <DataGridTemplateColumn Header="Edit" Width="60"
+                                        Visibility="{Binding DataContext.CanManage,
+                                            RelativeSource={RelativeSource AncestorType=UserControl},
+                                            Converter={StaticResource BoolToVisibilityConverter}}">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Command="{Binding DataContext.EditPresetCommand,
+                                        RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Style="{StaticResource MaterialDesignIconButton}"
+                                    Foreground="#89b4fa"
+                                    ToolTip="Edit preset"
+                                    Width="28" Height="28">
+                                <md:PackIcon Kind="Pencil" Width="14" Height="14"/>
+                            </Button>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Delete" Width="70"
                                         Visibility="{Binding DataContext.CanManage,
                                             RelativeSource={RelativeSource AncestorType=UserControl},
                                             Converter={StaticResource BoolToVisibilityConverter}}">

@@ -114,7 +114,7 @@
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="200">
+                <DataGridTextColumn Header="Action" Binding="{Binding Action}" Width="230" MinWidth="160">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>

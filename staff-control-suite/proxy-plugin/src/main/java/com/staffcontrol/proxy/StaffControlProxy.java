@@ -13,19 +13,24 @@ import com.staffcontrol.proxy.moderation.ModerationManager;
 import com.staffcontrol.proxy.permission.PermissionCache;
 import com.staffcontrol.proxy.player.PlayerManager;
 import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.connection.PostLoginEvent;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
+import net.kyori.adventure.text.Component;
 
 import java.nio.file.Path;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 @Plugin(
     id = "staffcontrolproxy",
     name = "Staff Control Proxy",
-    version = "1.1.0",
+    version = "1.1.3",
     description = "Central gateway for Staff Control Suite",
     authors = {"StaffControl"}
 )
@@ -45,6 +50,7 @@ public class StaffControlProxy {
     private ModerationManager moderationManager;
     private AppWebSocketServer appWebSocketServer;
     private AgentWebSocketServer agentWebSocketServer;
+    private ScheduledExecutorService expirationScheduler;
 
     @Inject
     public StaffControlProxy(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -55,7 +61,7 @@ public class StaffControlProxy {
 
     @Subscribe
     public void onProxyInitialize(ProxyInitializeEvent event) {
-        logger.info("=== Staff Control Proxy v1.1.0 starting ===");
+        logger.info("=== Staff Control Proxy v1.1.3 starting ===");
 
         config = new ProxyConfig(dataDirectory);
         try {
@@ -99,7 +105,7 @@ public class StaffControlProxy {
         AppMessageHandler messageHandler = new AppMessageHandler(
                 database, authManager, agentManager, auditLogger,
                 appWebSocketServer, playerManager, permissionCache, config, logger,
-                moderationManager);
+                moderationManager, server);
         appWebSocketServer.setMessageHandler(messageHandler);
 
         agentWebSocketServer = new AgentWebSocketServer(
@@ -134,9 +140,35 @@ public class StaffControlProxy {
         agentManager.startTimeoutMonitor();
         logger.info("Agent heartbeat monitor started (timeout=30s, check=15s).");
 
+        expirationScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "StaffControl-PunishmentExpiry");
+            t.setDaemon(true);
+            return t;
+        });
+        expirationScheduler.scheduleAtFixedRate(() -> {
+            int expired = moderationManager.expireOldPunishments();
+            if (expired > 0) logger.info("[StaffControl] Expired " + expired + " punishment(s).");
+        }, 60, 60, TimeUnit.SECONDS);
+        logger.info("Punishment expiration scheduler started (interval=60s).");
+
         logger.info("=== Staff Control Proxy started successfully ===");
         if (!authManager.ownerExists()) {
             logger.info("No owner account detected. Connect via the app to complete setup.");
+        }
+    }
+
+    @Subscribe
+    public void onPlayerPostLogin(PostLoginEvent event) {
+        if (moderationManager == null) return;
+        var player = event.getPlayer();
+        String uuid   = player.getUniqueId().toString();
+        String name   = player.getUsername();
+        String ip     = player.getRemoteAddress().getAddress().getHostAddress();
+        String ipHash = ModerationManager.hashIp(ip);
+
+        String banMessage = moderationManager.checkBanOnLogin(uuid, name, ipHash);
+        if (banMessage != null) {
+            player.disconnect(Component.text(banMessage));
         }
     }
 
@@ -145,6 +177,7 @@ public class StaffControlProxy {
         logger.info("=== Staff Control Proxy shutting down ===");
 
         agentManager.shutdown();
+        if (expirationScheduler != null) expirationScheduler.shutdownNow();
 
         if (appWebSocketServer != null) {
             try { appWebSocketServer.stop(1000); } catch (Exception ignored) {}

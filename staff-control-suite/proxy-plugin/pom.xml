@@ -6,7 +6,7 @@
 
     <groupId>com.staffcontrol</groupId>
     <artifactId>staff-control-proxy</artifactId>
-    <version>1.1.2</version>
+    <version>1.1.3</version>
     <packaging>jar</packaging>
 
     <name>Staff Control Proxy</name>

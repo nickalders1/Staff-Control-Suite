@@ -188,6 +188,30 @@ public class AgentWebSocketServer extends WebSocketServer {
         appServer.broadcastServerStatus(serverId, true, 0, 20.0, 0.0, now);
         appServer.broadcastAgentStatus(serverId, true, "ONLINE", agentConn.getVersion(),
                 agentConn.getProtocolVersion(), now, 0, agentConn.getConnectTime(), attempts, null);
+
+        // Push all active mutes to the newly connected agent so it can enforce them
+        try {
+            List<Map<String, Object>> activeMutes = database.getAllActiveMutes();
+            for (Map<String, Object> mute : activeMutes) {
+                String targetName = getString(mute, "target_name");
+                String reason     = getString(mute, "reason");
+                long expiresAt    = getLong(mute, "expires_at");
+                if (targetName == null) continue;
+
+                JsonObject msg = new JsonObject();
+                msg.addProperty("type", "moderation.mute");
+                JsonObject mutePayload = new JsonObject();
+                mutePayload.addProperty("playerName", targetName);
+                mutePayload.addProperty("reason",     reason != null ? reason : "");
+                mutePayload.addProperty("expiresAt",  expiresAt);
+                msg.add("payload", mutePayload);
+                agentConn.send(msg);
+            }
+            if (!activeMutes.isEmpty())
+                logger.info("[AgentWS] Synced " + activeMutes.size() + " active mute(s) to " + serverId);
+        } catch (Exception e) {
+            logger.warning("[AgentWS] Failed to sync mutes to " + serverId + ": " + e.getMessage());
+        }
     }
 
     private void handleAgentHeartbeat(WebSocket conn, JsonObject json) {
@@ -344,5 +368,10 @@ public class AgentWebSocketServer extends WebSocketServer {
     private String getString(Map<String, Object> map, String key) {
         Object val = map.get(key);
         return val != null ? String.valueOf(val) : null;
+    }
+
+    private long getLong(Map<String, Object> map, String key) {
+        Object val = map.get(key);
+        return val instanceof Number ? ((Number) val).longValue() : 0L;
     }
 }

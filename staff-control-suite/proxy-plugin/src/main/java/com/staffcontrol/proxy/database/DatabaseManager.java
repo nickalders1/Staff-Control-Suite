@@ -204,7 +204,8 @@ public class DatabaseManager {
             "ALTER TABLE player_cache ADD COLUMN last_joined_at INTEGER",
             "ALTER TABLE player_cache ADD COLUMN last_disconnect_at INTEGER",
             "ALTER TABLE servers ADD COLUMN last_heartbeat_at INTEGER",
-            "ALTER TABLE servers ADD COLUMN version TEXT"
+            "ALTER TABLE servers ADD COLUMN version TEXT",
+            "ALTER TABLE punishments ADD COLUMN revoked_by_username TEXT DEFAULT ''"
         };
         for (String sql : migrations) {
             try (Statement stmt = connection.createStatement()) {
@@ -888,6 +889,35 @@ public class DatabaseManager {
         }
     }
 
+    public synchronized List<Map<String, Object>> getAllPlayersHistory(int page, int limit, String search) throws SQLException {
+        boolean hasSearch = search != null && !search.isBlank();
+        String sql = "SELECT * FROM player_cache"
+                   + (hasSearch ? " WHERE name LIKE ?" : "")
+                   + " ORDER BY is_online DESC, last_seen DESC LIMIT ? OFFSET ?";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            int idx = 1;
+            if (hasSearch) ps.setString(idx++, "%" + search + "%");
+            ps.setInt(idx++, limit);
+            ps.setInt(idx, (page - 1) * limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Map<String, Object>> results = new ArrayList<>();
+                while (rs.next()) results.add(resultSetToMap(rs));
+                return results;
+            }
+        }
+    }
+
+    public synchronized int getAllPlayersHistoryTotal(String search) throws SQLException {
+        boolean hasSearch = search != null && !search.isBlank();
+        String sql = "SELECT COUNT(*) FROM player_cache" + (hasSearch ? " WHERE name LIKE ?" : "");
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            if (hasSearch) ps.setString(1, "%" + search + "%");
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
     public synchronized List<Map<String, Object>> getAllOnlinePlayers() throws SQLException {
         try (PreparedStatement ps = connection.prepareStatement(
                 "SELECT * FROM player_cache WHERE is_online = 1")) {
@@ -1096,6 +1126,21 @@ public class DatabaseManager {
         }
     }
 
+    public synchronized List<Map<String, Object>> getAllActiveMutes() throws SQLException {
+        long now = System.currentTimeMillis();
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT * FROM punishments WHERE active = 1 " +
+                "AND (action_type = 'MUTE' OR action_type = 'TEMP_MUTE') " +
+                "AND (expires_at = 0 OR expires_at > ?)")) {
+            ps.setLong(1, now);
+            try (ResultSet rs = ps.executeQuery()) {
+                List<Map<String, Object>> results = new ArrayList<>();
+                while (rs.next()) results.add(resultSetToMap(rs));
+                return results;
+            }
+        }
+    }
+
     public synchronized Map<String, Object> getActiveMuteRecord(String targetUuid, String targetName) throws SQLException {
         long now = System.currentTimeMillis();
         try (PreparedStatement ps = connection.prepareStatement(
@@ -1118,11 +1163,12 @@ public class DatabaseManager {
         long now = System.currentTimeMillis();
         try (PreparedStatement ps = connection.prepareStatement(
                 "UPDATE punishments SET active = 0, revoked_at = ?, revoked_by_user_id = ?, " +
-                "revoke_reason = ? WHERE id = ? AND active = 1")) {
+                "revoked_by_username = ?, revoke_reason = ? WHERE id = ? AND active = 1")) {
             ps.setLong(1, now);
             ps.setLong(2, revokedByUserId);
-            ps.setString(3, revokeReason != null ? revokeReason : "");
-            ps.setLong(4, punishmentId);
+            ps.setString(3, revokedByUsername != null ? revokedByUsername : "");
+            ps.setString(4, revokeReason != null ? revokeReason : "");
+            ps.setLong(5, punishmentId);
             return ps.executeUpdate() > 0;
         }
     }

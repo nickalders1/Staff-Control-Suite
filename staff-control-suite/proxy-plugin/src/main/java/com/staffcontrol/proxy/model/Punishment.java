@@ -22,6 +22,7 @@ public class Punishment {
     private boolean active;
     private long revokedAt;
     private long revokedByUserId;
+    private String revokedByUsername;
     private String revokeReason;
 
     public Punishment() {}
@@ -43,9 +44,10 @@ public class Punishment {
         p.evidence         = getString(row, "evidence");
         Object activeObj   = row.get("active");
         p.active           = activeObj instanceof Number ? ((Number) activeObj).intValue() == 1 : false;
-        p.revokedAt        = getLong(row, "revoked_at");
-        p.revokedByUserId  = getLong(row, "revoked_by_user_id");
-        p.revokeReason     = getString(row, "revoke_reason");
+        p.revokedAt          = getLong(row, "revoked_at");
+        p.revokedByUserId    = getLong(row, "revoked_by_user_id");
+        p.revokedByUsername  = getString(row, "revoked_by_username");
+        p.revokeReason       = getString(row, "revoke_reason");
         return p;
     }
 
@@ -71,9 +73,10 @@ public class Punishment {
         obj.addProperty("targetServer",       targetServer != null ? targetServer : "global");
         obj.addProperty("evidence",           evidence != null ? evidence : "");
         obj.addProperty("active",             active);
-        obj.addProperty("revokedAt",          revokedAt);
-        obj.addProperty("revokedByUserId",    revokedByUserId);
-        obj.addProperty("revokeReason",       revokeReason != null ? revokeReason : "");
+        obj.addProperty("revokedAt",           revokedAt);
+        obj.addProperty("revokedByUserId",     revokedByUserId);
+        obj.addProperty("revokedByUsername",   revokedByUsername != null ? revokedByUsername : "");
+        obj.addProperty("revokeReason",        revokeReason != null ? revokeReason : "");
         return obj;
     }
 
@@ -136,6 +139,9 @@ public class Punishment {
 
     public long getRevokedByUserId() { return revokedByUserId; }
     public void setRevokedByUserId(long revokedByUserId) { this.revokedByUserId = revokedByUserId; }
+
+    public String getRevokedByUsername() { return revokedByUsername; }
+    public void setRevokedByUsername(String revokedByUsername) { this.revokedByUsername = revokedByUsername; }
 
     public String getRevokeReason() { return revokeReason; }
     public void setRevokeReason(String revokeReason) { this.revokeReason = revokeReason; }

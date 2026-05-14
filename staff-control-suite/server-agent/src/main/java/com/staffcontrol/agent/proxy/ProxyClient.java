@@ -91,6 +91,47 @@ public class ProxyClient extends WebSocketClient {
                     break;
                 }
 
+                case "moderation.mute": {
+                    if (json.has("payload")) {
+                        JsonObject p = json.getAsJsonObject("payload");
+                        String playerName = p.has("playerName") ? p.get("playerName").getAsString() : null;
+                        long expiresAt    = p.has("expiresAt")  ? p.get("expiresAt").getAsLong()    : 0L;
+                        if (playerName != null) plugin.getMuteManager().addMute(playerName, expiresAt);
+                    }
+                    break;
+                }
+
+                case "moderation.unmute": {
+                    if (json.has("payload")) {
+                        JsonObject p = json.getAsJsonObject("payload");
+                        String playerName = p.has("playerName") ? p.get("playerName").getAsString() : null;
+                        if (playerName != null) plugin.getMuteManager().removeMute(playerName);
+                    }
+                    break;
+                }
+
+                case "moderation.warn": {
+                    if (json.has("payload")) {
+                        JsonObject p = json.getAsJsonObject("payload");
+                        String playerName = p.has("playerName") ? p.get("playerName").getAsString() : null;
+                        String reason     = p.has("reason")     ? p.get("reason").getAsString()     : "";
+                        if (playerName != null) {
+                            final String name = playerName;
+                            final String msg  = reason;
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                org.bukkit.entity.Player target = Bukkit.getPlayerExact(name);
+                                if (target != null) {
+                                    target.sendMessage(
+                                        net.kyori.adventure.text.Component.text(
+                                            "⚠ You have been warned by staff. Reason: " + msg,
+                                            net.kyori.adventure.text.format.NamedTextColor.YELLOW));
+                                }
+                            });
+                        }
+                    }
+                    break;
+                }
+
                 default:
                     plugin.getLogger().fine("Received unhandled message type from proxy: " + type);
                     break;

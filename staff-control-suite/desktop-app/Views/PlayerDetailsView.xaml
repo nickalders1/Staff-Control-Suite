@@ -6,16 +6,22 @@
              Background="#1e1e2e">
 
     <UserControl.Resources>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <converters:StatusToColorConverter x:Key="StatusToColorConverter"/>
-        <converters:BoolToOnlineStringConverter x:Key="BoolToOnlineStringConverter"/>
-        <converters:FirstLetterConverter x:Key="FirstLetterConverter"/>
+        <converters:BoolToVisibilityConverter          x:Key="BoolToVisibilityConverter"/>
+        <converters:InvertedBoolToVisibilityConverter  x:Key="InvertedBoolToVisibilityConverter"/>
+        <converters:StatusToColorConverter             x:Key="StatusToColorConverter"/>
+        <converters:BoolToOnlineStringConverter        x:Key="BoolToOnlineStringConverter"/>
+        <converters:FirstLetterConverter               x:Key="FirstLetterConverter"/>
+        <converters:ActionTypeToColorConverter         x:Key="ActionTypeToColorConverter"/>
+        <converters:PunishmentStatusToColorConverter   x:Key="PunishmentStatusToColorConverter"/>
+        <converters:InvertedBoolConverter              x:Key="InvertedBoolConverter"/>
+        <converters:StringToVisibilityConverter        x:Key="StringToVisibilityConverter"/>
+        <converters:ZeroCountToVisibilityConverter     x:Key="ZeroCountToVisibilityConverter"/>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="24">
 
-            <!-- Back + Header -->
+            <!-- Back + loading -->
             <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
                 <Button Command="{Binding BackCommand}"
                         Style="{StaticResource MaterialDesignFlatButton}"
@@ -26,12 +32,16 @@
                         <TextBlock Text="Back to Players"/>
                     </StackPanel>
                 </Button>
-
                 <ProgressBar IsIndeterminate="True" Width="60" Height="4"
                              VerticalAlignment="Center"
                              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
                              Foreground="#89b4fa"/>
             </StackPanel>
+
+            <!-- Error bar -->
+            <TextBlock Text="{Binding ErrorMessage}"
+                       Foreground="#f38ba8" FontSize="12" Margin="0,0,0,12"
+                       Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
 
             <!-- Player Info Card -->
             <md:Card Padding="24" Background="#313244" Margin="0,0,0,16">
@@ -39,17 +49,15 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Avatar -->
                     <Border Width="64" Height="64" CornerRadius="32"
-                            Background="#89b4fa" Margin="0,0,20,0"
-                            VerticalAlignment="Top">
+                            Background="#89b4fa" Margin="0,0,20,0" VerticalAlignment="Top">
                         <TextBlock Text="{Binding Player.Name, Converter={StaticResource FirstLetterConverter}}"
-                                   FontSize="28" FontWeight="Bold"
-                                   Foreground="#1e1e2e"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"/>
+                                   FontSize="28" FontWeight="Bold" Foreground="#1e1e2e"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
 
                     <!-- Info -->
@@ -80,10 +88,23 @@
                             </Border>
                         </StackPanel>
                     </StackPanel>
+
+                    <!-- Punish button -->
+                    <Button Grid.Column="2" Command="{Binding PunishPlayerCommand}"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Background="#f38ba8" Foreground="#1e1e2e"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding CanPunish, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <md:PackIcon Kind="Gavel" Width="16" Height="16"
+                                         VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="Punish"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </md:Card>
 
-            <!-- Stats Grid -->
+            <!-- Stats + Activity -->
             <Grid Margin="0,0,0,16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -91,41 +112,35 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Left Column -->
+                <!-- Stats -->
                 <md:Card Grid.Column="0" Padding="20" Background="#313244">
                     <StackPanel>
                         <TextBlock Text="Stats" FontSize="14" FontWeight="SemiBold"
                                    Foreground="#89b4fa" Margin="0,0,0,16"/>
 
-                        <!-- Health -->
                         <TextBlock Text="Health" FontSize="12" Foreground="#6c7086" Margin="0,0,0,4"/>
                         <StackPanel Margin="0,0,0,12">
-                            <ProgressBar Value="{Binding Player.Health}"
-                                         Maximum="20" Height="8"
+                            <ProgressBar Value="{Binding Player.Health}" Maximum="20" Height="8"
                                          Foreground="#f38ba8" Background="#3a3a4a"/>
                             <TextBlock Text="{Binding Player.Health, StringFormat={}{0:F1}/20}"
                                        FontSize="11" Foreground="#cdd6f4" HorizontalAlignment="Right"/>
                         </StackPanel>
 
-                        <!-- Food -->
                         <TextBlock Text="Food Level" FontSize="12" Foreground="#6c7086" Margin="0,0,0,4"/>
                         <StackPanel Margin="0,0,0,12">
-                            <ProgressBar Value="{Binding Player.FoodLevel}"
-                                         Maximum="20" Height="8"
+                            <ProgressBar Value="{Binding Player.FoodLevel}" Maximum="20" Height="8"
                                          Foreground="#f9e2af" Background="#3a3a4a"/>
                             <TextBlock Text="{Binding Player.FoodLevel, StringFormat={}{0}/20}"
                                        FontSize="11" Foreground="#cdd6f4" HorizontalAlignment="Right"/>
                         </StackPanel>
 
-                        <!-- Ping -->
                         <Grid Margin="0,0,0,8">
                             <TextBlock Text="Ping" FontSize="12" Foreground="#6c7086"/>
                             <TextBlock Text="{Binding Player.PingDisplay}"
                                        FontSize="12" Foreground="#f9e2af" HorizontalAlignment="Right"/>
                         </Grid>
 
-                        <!-- World -->
-                        <Grid Margin="0,0,0,8">
+                        <Grid>
                             <TextBlock Text="World" FontSize="12" Foreground="#6c7086"/>
                             <TextBlock Text="{Binding Player.World}"
                                        FontSize="12" Foreground="#cdd6f4" HorizontalAlignment="Right"/>
@@ -133,7 +148,7 @@
                     </StackPanel>
                 </md:Card>
 
-                <!-- Right Column -->
+                <!-- Activity -->
                 <md:Card Grid.Column="2" Padding="20" Background="#313244">
                     <StackPanel>
                         <TextBlock Text="Activity" FontSize="14" FontWeight="SemiBold"
@@ -151,7 +166,7 @@
                                        FontSize="12" Foreground="#cdd6f4" HorizontalAlignment="Right"/>
                         </Grid>
 
-                        <Grid Margin="0,0,0,12">
+                        <Grid>
                             <TextBlock Text="Last Seen" FontSize="12" Foreground="#6c7086"/>
                             <TextBlock Text="{Binding Player.LastJoinedDisplay}"
                                        FontSize="12" Foreground="#cdd6f4" HorizontalAlignment="Right"/>
@@ -160,25 +175,223 @@
                 </md:Card>
             </Grid>
 
-            <!-- Punishments -->
-            <md:Card Padding="20" Background="#313244" Margin="0,0,0,16">
+            <!-- Active Punishments -->
+            <md:Card Padding="20" Background="#313244" Margin="0,0,0,16"
+                     Visibility="{Binding CanViewModeration, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel>
-                    <TextBlock Text="Punishment History" FontSize="14" FontWeight="SemiBold"
-                               Foreground="#89b4fa" Margin="0,0,0,16"/>
-                    <TextBlock Text="No punishments on record."
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="Active Punishments" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="#f38ba8" VerticalAlignment="Center"/>
+                        <ProgressBar IsIndeterminate="True" Width="40" Height="3"
+                                     VerticalAlignment="Center" Margin="12,0,0,0"
+                                     Visibility="{Binding IsLoadingPunishments, Converter={StaticResource BoolToVisibilityConverter}}"
+                                     Foreground="#89b4fa"/>
+                    </StackPanel>
+
+                    <!-- Empty state -->
+                    <TextBlock Text="No active punishments."
                                FontSize="13" Foreground="#45475a"
-                               HorizontalAlignment="Center" Margin="0,10"/>
+                               HorizontalAlignment="Center" Margin="0,8"
+                               Visibility="{Binding ActivePunishments.Count,
+                                   Converter={StaticResource ZeroCountToVisibilityConverter}}"/>
+
+                    <!-- Active punishment rows -->
+                    <ItemsControl ItemsSource="{Binding ActivePunishments}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#252535" CornerRadius="4" Padding="12,10"
+                                        Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Type badge -->
+                                        <Border Background="#1e1e2e" CornerRadius="4" Padding="8,4" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding ActionType}"
+                                                       FontSize="11" FontWeight="Bold"
+                                                       Foreground="{Binding ActionType, Converter={StaticResource ActionTypeToColorConverter}}"/>
+                                        </Border>
+
+                                        <!-- Details -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Reason}"
+                                                       FontSize="13" Foreground="#cdd6f4"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                                                <TextBlock Text="{Binding CreatedByUsername}"
+                                                           FontSize="11" Foreground="#6c7086"/>
+                                                <TextBlock Text=" · " FontSize="11" Foreground="#45475a"/>
+                                                <TextBlock Text="{Binding ExpiresDisplay}"
+                                                           FontSize="11" Foreground="#fab387"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!-- Revoke button -->
+                                        <Button Grid.Column="2"
+                                                Command="{Binding DataContext.RevokeCommand,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding Id}"
+                                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                BorderBrush="#f38ba8" Foreground="#f38ba8"
+                                                FontSize="11" Padding="8,4"
+                                                Visibility="{Binding DataContext.CanRevoke,
+                                                    RelativeSource={RelativeSource AncestorType=UserControl},
+                                                    Converter={StaticResource BoolToVisibilityConverter}}">
+                                            Revoke
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </md:Card>
 
-            <!-- Notes -->
-            <md:Card Padding="20" Background="#313244">
+            <!-- Punishment History -->
+            <md:Card Padding="20" Background="#313244" Margin="0,0,0,16"
+                     Visibility="{Binding CanViewModeration, Converter={StaticResource BoolToVisibilityConverter}}">
                 <StackPanel>
-                    <TextBlock Text="Staff Notes" FontSize="14" FontWeight="SemiBold"
-                               Foreground="#89b4fa" Margin="0,0,0,16"/>
+                    <TextBlock Text="Punishment History" FontSize="14" FontWeight="SemiBold"
+                               Foreground="#89b4fa" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="No punishments on record."
+                               FontSize="13" Foreground="#45475a"
+                               HorizontalAlignment="Center" Margin="0,8"
+                               Visibility="{Binding PunishmentHistory.Count,
+                                   Converter={StaticResource ZeroCountToVisibilityConverter}}"/>
+
+                    <ItemsControl ItemsSource="{Binding PunishmentHistory}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderThickness="0,0,0,1" BorderBrush="#313244"
+                                        Padding="4,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- Type -->
+                                        <TextBlock Text="{Binding ActionType}" Width="120"
+                                                   FontSize="12" FontWeight="SemiBold"
+                                                   Foreground="{Binding ActionType, Converter={StaticResource ActionTypeToColorConverter}}"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+
+                                        <!-- Reason + meta -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Reason}" FontSize="12"
+                                                       Foreground="#cdd6f4" TextTrimming="CharacterEllipsis"
+                                                       ToolTip="{Binding Reason}"/>
+                                            <TextBlock FontSize="11" Foreground="#6c7086">
+                                                <Run Text="{Binding CreatedByUsername}"/>
+                                                <Run Text=" · "/>
+                                                <Run Text="{Binding CreatedAtDisplay}"/>
+                                            </TextBlock>
+                                            <!-- Revoke info (visible only when revoked) -->
+                                            <TextBlock FontSize="11" Foreground="#45475a"
+                                                       Visibility="{Binding RevokedByDisplay,
+                                                           Converter={StaticResource StringToVisibilityConverter}}">
+                                                <Run Text="Revoked by "/>
+                                                <Run Text="{Binding RevokedByDisplay}" Foreground="#6c7086"/>
+                                                <Run Text=" · "/>
+                                                <Run Text="{Binding RevokedAtDisplay}"/>
+                                                <Run Text=" — "/>
+                                                <Run Text="{Binding RevokeReason}" Foreground="#585b70"/>
+                                            </TextBlock>
+                                        </StackPanel>
+
+                                        <!-- Duration -->
+                                        <TextBlock Grid.Column="2" Text="{Binding DurationDisplay}"
+                                                   FontSize="11" Foreground="#cba6f7"
+                                                   VerticalAlignment="Center" Margin="12,0"
+                                                   MinWidth="70"/>
+
+                                        <!-- Status -->
+                                        <Border Grid.Column="3" CornerRadius="4" Padding="6,2"
+                                                Background="{Binding StatusDisplay, Converter={StaticResource PunishmentStatusToColorConverter}}">
+                                            <TextBlock Text="{Binding StatusDisplay}"
+                                                       FontSize="10" FontWeight="Bold" Foreground="White"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </md:Card>
+
+            <!-- Staff Notes -->
+            <md:Card Padding="20" Background="#313244" Margin="0,0,0,8"
+                     Visibility="{Binding CanViewNotes, Converter={StaticResource BoolToVisibilityConverter}}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                        <TextBlock Text="Staff Notes" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="#89b4fa" VerticalAlignment="Center"/>
+                        <ProgressBar IsIndeterminate="True" Width="40" Height="3"
+                                     VerticalAlignment="Center" Margin="12,0,0,0"
+                                     Visibility="{Binding IsLoadingNotes, Converter={StaticResource BoolToVisibilityConverter}}"
+                                     Foreground="#89b4fa"/>
+                    </StackPanel>
+
+                    <!-- Add note form -->
+                    <Grid Margin="0,0,0,12"
+                          Visibility="{Binding CanCreateNotes, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding NewNoteText, UpdateSourceTrigger=PropertyChanged}"
+                                 md:HintAssist.Hint="Add a staff note…"
+                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                 Foreground="White">
+                            <TextBox.InputBindings>
+                                <KeyBinding Key="Return" Modifiers="Ctrl" Command="{Binding AddNoteCommand}"/>
+                            </TextBox.InputBindings>
+                        </TextBox>
+                        <Button Grid.Column="2" Command="{Binding AddNoteCommand}"
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="#89b4fa" Foreground="#1e1e2e"
+                                IsEnabled="{Binding IsAddingNote, Converter={StaticResource InvertedBoolConverter}}">
+                            Add Note
+                        </Button>
+                    </Grid>
+
+                    <!-- Empty state -->
                     <TextBlock Text="No notes added yet."
                                FontSize="13" Foreground="#45475a"
-                               HorizontalAlignment="Center" Margin="0,10"/>
+                               HorizontalAlignment="Center" Margin="0,8"
+                               Visibility="{Binding Notes.Count,
+                                   Converter={StaticResource ZeroCountToVisibilityConverter}}"/>
+
+                    <!-- Notes list -->
+                    <ItemsControl ItemsSource="{Binding Notes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#252535" CornerRadius="4" Padding="12,10"
+                                        Margin="0,0,0,6">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Note}"
+                                                   FontSize="13" Foreground="#cdd6f4"
+                                                   TextWrapping="Wrap"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding CreatedByUsername}"
+                                                       FontSize="11" Foreground="#89b4fa"/>
+                                            <TextBlock Text=" · " FontSize="11" Foreground="#45475a"/>
+                                            <TextBlock Text="{Binding CreatedAtDisplay}"
+                                                       FontSize="11" Foreground="#6c7086"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
             </md:Card>
 

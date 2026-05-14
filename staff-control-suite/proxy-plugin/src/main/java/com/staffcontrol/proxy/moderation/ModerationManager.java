@@ -2,6 +2,8 @@ package com.staffcontrol.proxy.moderation;
 
 import com.staffcontrol.proxy.database.DatabaseManager;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -122,6 +124,18 @@ public class ModerationManager {
     public boolean revokePunishment(long punishmentId, long revokedByUserId,
             String revokedByUsername, String revokeReason) throws SQLException {
         return database.revokePunishment(punishmentId, revokedByUserId, revokedByUsername, revokeReason);
+    }
+
+    public static String hashIp(String ip) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(ip.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) hex.append(String.format("%02x", b));
+            return hex.toString();
+        } catch (Exception e) {
+            return ip;
+        }
     }
 
     private String getStr(Map<String, Object> map, String key) {

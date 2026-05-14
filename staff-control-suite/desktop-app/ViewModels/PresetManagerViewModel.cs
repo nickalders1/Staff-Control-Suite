@@ -171,12 +171,64 @@ public partial class PresetManagerViewModel : ObservableObject
         {
             await App.WebSocketService.SendRequestAsync(
                 MessageTypes.ModerationPresetsUpdate,
-                new { id = preset.Id, enabled = !preset.Enabled },
+                new
+                {
+                    id              = preset.Id,
+                    category        = preset.Category,
+                    name            = preset.Name,
+                    description     = preset.Description,
+                    actionType      = preset.ActionType,
+                    durationSeconds = preset.DurationSeconds,
+                    severity        = preset.Severity,
+                    stackable       = preset.Stackable,
+                    bypassCap       = preset.BypassCap,
+                    requiresIpBan   = preset.RequiresIpBan,
+                    enabled         = !preset.Enabled
+                },
                 App.AuthService.SessionToken);
             preset.Enabled = !preset.Enabled;
-            OnPropertyChanged(nameof(FilteredPresets));
             ApplyFilter();
         }
         catch (Exception ex) { ErrorMessage = ex.Message; }
+    }
+
+    [RelayCommand]
+    public async Task EditPresetAsync(PunishmentPreset? preset)
+    {
+        if (!CanManage || preset == null) return;
+
+        var dialog = new EditPresetDialog(preset);
+        var result = await DialogHost.Show(dialog, "RootDialogHost");
+        if (result is not PunishmentPreset updated) return;
+
+        if (string.IsNullOrWhiteSpace(updated.Name))     { ErrorMessage = "Name is required.";     return; }
+        if (string.IsNullOrWhiteSpace(updated.Category)) { ErrorMessage = "Category is required."; return; }
+
+        IsLoading    = true;
+        ErrorMessage = "";
+        try
+        {
+            await App.WebSocketService.SendRequestAsync(
+                MessageTypes.ModerationPresetsUpdate,
+                new
+                {
+                    id              = updated.Id,
+                    category        = updated.Category,
+                    name            = updated.Name,
+                    description     = updated.Description,
+                    actionType      = updated.ActionType,
+                    durationSeconds = updated.DurationSeconds,
+                    severity        = updated.Severity,
+                    stackable       = updated.Stackable,
+                    bypassCap       = updated.BypassCap,
+                    requiresIpBan   = updated.RequiresIpBan,
+                    enabled         = updated.Enabled
+                },
+                App.AuthService.SessionToken);
+
+            await LoadPresetsAsync();
+        }
+        catch (Exception ex) { ErrorMessage = ex.Message; }
+        finally { IsLoading = false; }
     }
 }

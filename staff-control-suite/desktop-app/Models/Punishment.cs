@@ -20,18 +20,24 @@ public partial class Punishment : ObservableObject
     [ObservableProperty] private bool   _active;
     [ObservableProperty] private long   _revokedAt;
     [ObservableProperty] private long   _revokedByUserId;
+    [ObservableProperty] private string _revokedByUsername  = "";
     [ObservableProperty] private string _revokeReason       = "";
 
     // Computed display properties
     public string StatusDisplay    => Active ? "Active" : (RevokedAt > 0 ? "Revoked" : "Expired");
-    public string DurationDisplay  => FormatDuration(DurationSeconds);
+    public string DurationDisplay  => ExpiresAt <= 0 && DurationSeconds <= 0 ? "Permanent" : FormatDuration(DurationSeconds);
     public string CreatedAtDisplay => CreatedAt > 0
         ? DateTimeOffset.FromUnixTimeMilliseconds(CreatedAt).LocalDateTime.ToString("yyyy-MM-dd HH:mm")
         : "";
-    public string ExpiresDisplay   => ExpiresAt <= 0 ? "Never"
+    public string ExpiresDisplay   => ExpiresAt <= 0 ? "Permanent"
         : DateTimeOffset.FromUnixTimeMilliseconds(ExpiresAt).LocalDateTime.ToString("yyyy-MM-dd HH:mm");
-    public bool   IsPermanent      => DurationSeconds <= 0 &&
-        ActionType is "BAN" or "TEMP_BAN" or "IP_BAN" or "TEMP_IP_BAN" or "MUTE" or "TEMP_MUTE";
+    public string RevokedAtDisplay => RevokedAt > 0
+        ? DateTimeOffset.FromUnixTimeMilliseconds(RevokedAt).LocalDateTime.ToString("yyyy-MM-dd HH:mm")
+        : "";
+    public string RevokedByDisplay => !string.IsNullOrEmpty(RevokedByUsername) ? RevokedByUsername
+        : RevokedByUserId > 0 ? $"#{RevokedByUserId}" : "";
+    public bool   IsPermanent      => ExpiresAt <= 0 &&
+        ActionType is "BAN" or "IP_BAN" or "MUTE";
 
     public static string FormatDuration(long seconds)
     {
@@ -59,6 +65,7 @@ public partial class Punishment : ObservableObject
         Active            = e.TryGetProperty("active",            out var ac)   && ac.GetBoolean(),
         RevokedAt         = e.TryGetProperty("revokedAt",         out var ra)   ? ra.GetInt64()         : 0,
         RevokedByUserId   = e.TryGetProperty("revokedByUserId",   out var rbui) ? rbui.GetInt64()       : 0,
+        RevokedByUsername = e.TryGetProperty("revokedByUsername", out var rbun) ? rbun.GetString() ?? "" : "",
         RevokeReason      = e.TryGetProperty("revokeReason",      out var rr)   ? rr.GetString()   ?? "" : "",
     };
 }

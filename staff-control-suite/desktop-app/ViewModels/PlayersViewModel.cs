@@ -5,22 +5,20 @@ using CommunityToolkit.Mvvm.Input;
 using MaterialDesignThemes.Wpf;
 using StaffControlSuite.Models;
 using StaffControlSuite.Protocol;
-using StaffControlSuite.Services;
 using StaffControlSuite.Views.Dialogs;
 
 namespace StaffControlSuite.ViewModels;
 
 public partial class PlayersViewModel : ObservableObject
 {
-    private readonly PlayerCacheService _playerCache;
-    private List<PlayerInfo> _snapshot = new();
+    private readonly List<PlayerInfo> _snapshot = new();
 
     public ObservableCollection<PlayerInfo> Players { get; } = new();
     public ObservableCollection<string> ServerFilter { get; } = new();
 
     [ObservableProperty] private bool _isLoading;
-    [ObservableProperty] private int _filteredCount;
-    [ObservableProperty] private int _networkTotal;
+    [ObservableProperty] private int  _filteredCount;
+    [ObservableProperty] private int  _networkTotal;
 
     public bool CanPunish => App.AuthService.HasPermission("players.punishments.create") || App.AuthService.IsOwner();
 
@@ -40,12 +38,9 @@ public partial class PlayersViewModel : ObservableObject
 
     public PlayersViewModel()
     {
-        _playerCache = App.PlayerCacheService;
-
-        // React to real-time changes by refreshing the view from cache
-        App.WebSocketService.PlayerJoinReceived  += (_, _) => RefreshFromCache();
-        App.WebSocketService.PlayerLeftReceived  += (_, _) => RefreshFromCache();
-        App.WebSocketService.PlayerUpdateReceived += (_, _) => RefreshFromCache();
+        App.WebSocketService.PlayerJoinReceived   += OnPlayerJoin;
+        App.WebSocketService.PlayerLeftReceived   += OnPlayerLeft;
+        App.WebSocketService.PlayerUpdateReceived += OnPlayerUpdate;
     }
 
     [RelayCommand]
@@ -54,57 +49,105 @@ public partial class PlayersViewModel : ObservableObject
         IsLoading = true;
         try
         {
-            // Request a fresh list from the proxy — the PlayerCacheService will get updated
-            // automatically via the event.player.update push event that the proxy sends.
-            // We also do an explicit request so the cache is warm on first load.
             var result = await App.WebSocketService.SendRequestAsync(
-                MessageTypes.PlayersList, null, App.AuthService.SessionToken);
+                MessageTypes.PlayersHistory, null, App.AuthService.SessionToken);
 
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                _playerCache.Clear();
-
+                _snapshot.Clear();
                 var arr = result.TryGetProperty("players", out var pa) ? pa : default;
                 if (arr.ValueKind == System.Text.Json.JsonValueKind.Array)
-                {
                     foreach (var p in arr.EnumerateArray())
-                    {
-                        var player = ParsePlayer(p);
-                        // Inject directly into cache via join event path
-                        App.WebSocketService.InjectPlayerJoin(player);
-                    }
-                }
-            });
+                        _snapshot.Add(ParsePlayer(p));
 
-            RefreshFromCache();
+                NetworkTotal = _snapshot.Count;
+                RebuildServerFilter();
+                ApplyFilter();
+            });
         }
         catch { }
         finally { IsLoading = false; }
     }
 
-    private void RefreshFromCache()
+    private void OnPlayerJoin(PlayerInfo player, string? previousServerId)
     {
         Application.Current.Dispatcher.InvokeAsync(() =>
         {
-            _snapshot = _playerCache.GetAll().ToList();
-            NetworkTotal = _snapshot.Count;
-
-            var serverIds = _snapshot.Select(p => p.ServerId)
-                                     .Where(s => !string.IsNullOrEmpty(s))
-                                     .Distinct()
-                                     .OrderBy(s => s)
-                                     .ToList();
-
-            // Rebuild server filter list preserving selection
-            var previous = SelectedServerFilter;
-            ServerFilter.Clear();
-            ServerFilter.Add("All Servers");
-            foreach (var sid in serverIds) ServerFilter.Add(sid);
-
-            SelectedServerFilter = ServerFilter.Contains(previous ?? "") ? previous : "All Servers";
-
+            var existing = _snapshot.FirstOrDefault(p => p.Uuid == player.Uuid);
+            if (existing != null)
+            {
+                existing.IsOnline       = true;
+                existing.Name           = player.Name;
+                existing.ServerId       = player.ServerId;
+                existing.World          = player.World;
+                existing.Gamemode       = player.Gamemode;
+                existing.Health         = player.Health;
+                existing.FoodLevel      = player.FoodLevel;
+                existing.Ping           = player.Ping;
+                existing.LastJoined     = player.LastJoined;
+                existing.PlaytimeSeconds = player.PlaytimeSeconds;
+            }
+            else
+            {
+                _snapshot.Add(player);
+                NetworkTotal = _snapshot.Count;
+            }
+            RebuildServerFilter();
             ApplyFilter();
         });
+    }
+
+    private void OnPlayerLeft(string uuid, string serverId)
+    {
+        Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            var player = _snapshot.FirstOrDefault(p => p.Uuid == uuid);
+            if (player != null)
+            {
+                player.IsOnline = false;
+                player.ServerId = "";
+            }
+            RebuildServerFilter();
+            ApplyFilter();
+        });
+    }
+
+    private void OnPlayerUpdate(string serverId, List<PlayerInfo> players)
+    {
+        Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            foreach (var updated in players)
+            {
+                var existing = _snapshot.FirstOrDefault(p => p.Uuid == updated.Uuid);
+                if (existing == null) continue;
+                existing.IsOnline  = updated.IsOnline;
+                existing.ServerId  = updated.ServerId;
+                existing.World     = updated.World;
+                existing.Gamemode  = updated.Gamemode;
+                existing.Health    = updated.Health;
+                existing.FoodLevel = updated.FoodLevel;
+                existing.Ping      = updated.Ping;
+                existing.PlaytimeSeconds = updated.PlaytimeSeconds;
+            }
+            ApplyFilter();
+        });
+    }
+
+    private void RebuildServerFilter()
+    {
+        var previous = SelectedServerFilter;
+        var serverIds = _snapshot
+            .Where(p => p.IsOnline && !string.IsNullOrEmpty(p.ServerId))
+            .Select(p => p.ServerId)
+            .Distinct()
+            .OrderBy(s => s)
+            .ToList();
+
+        ServerFilter.Clear();
+        ServerFilter.Add("All Servers");
+        foreach (var sid in serverIds) ServerFilter.Add(sid);
+
+        SelectedServerFilter = ServerFilter.Contains(previous ?? "") ? previous : "All Servers";
     }
 
     private void ApplyFilter()
@@ -118,7 +161,7 @@ public partial class PlayersViewModel : ObservableObject
         if (SelectedServerFilter != null && SelectedServerFilter != "All Servers")
             filtered = filtered.Where(p => p.ServerId == SelectedServerFilter);
 
-        foreach (var p in filtered.OrderBy(p => p.Name))
+        foreach (var p in filtered.OrderByDescending(p => p.IsOnline).ThenBy(p => p.Name))
             Players.Add(p);
 
         FilteredCount = Players.Count;
