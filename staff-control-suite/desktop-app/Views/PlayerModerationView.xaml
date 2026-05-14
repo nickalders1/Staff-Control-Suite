@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:StaffControlSuite.Converters"
-             Background="#1e1e2e">
+             Background="{DynamicResource AppBackgroundBrush}">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter           x:Key="BoolToVisibilityConverter"/>
@@ -13,21 +13,35 @@
         <converters:PunishmentStatusToColorConverter    x:Key="PunishmentStatusToColorConverter"/>
         <converters:StringToVisibilityConverter         x:Key="StringToVisibilityConverter"/>
 
-        <Style x:Key="TabItemStyle" TargetType="TabItem" BasedOn="{StaticResource MaterialDesignTabItem}">
-            <Setter Property="Foreground" Value="#cdd6f4"/>
+        <Style x:Key="PunishTabItemStyle" TargetType="TabItem" BasedOn="{StaticResource MaterialDesignTabItem}">
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="FontSize" Value="13"/>
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="24">
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource PageFadeIn}"/>
+        </EventTrigger>
+    </UserControl.Triggers>
+
+    <Grid Margin="28">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Page header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="Player Moderation" Style="{StaticResource PageTitleStyle}"/>
+            <TextBlock Text="Search a player to view and manage their punishments"
+                       Style="{StaticResource PageSubtitleStyle}"/>
+        </StackPanel>
+
         <!-- Search bar -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
+        <Grid Grid.Row="1" Margin="0,0,0,12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -50,7 +64,7 @@
             <Button Grid.Column="1"
                     Command="{Binding SearchPlayerCommand}"
                     Style="{StaticResource MaterialDesignRaisedButton}"
-                    Background="#89b4fa" Foreground="#1e1e2e"
+                    Background="{DynamicResource AccentBrush}" Foreground="#1e1e2e"
                     Margin="0,0,10,0">
                 <StackPanel Orientation="Horizontal">
                     <md:PackIcon Kind="Magnify" Width="16" Height="16"
@@ -62,7 +76,7 @@
             <Button Grid.Column="2"
                     Command="{Binding OpenPunishDialogCommand}"
                     Style="{StaticResource MaterialDesignRaisedButton}"
-                    Background="#f38ba8" Foreground="#1e1e2e"
+                    Background="{DynamicResource DangerBrush}" Foreground="#1e1e2e"
                     Margin="0,0,10,0"
                     Visibility="{Binding CanPunish, Converter={StaticResource BoolToVisibilityConverter}}"
                     IsEnabled="{Binding IsPlayerFound}">
@@ -74,40 +88,47 @@
             </Button>
 
             <ProgressBar Grid.Column="3"
-                         IsIndeterminate="True" Width="60" Height="4"
+                         IsIndeterminate="True" Width="60" Height="3"
                          VerticalAlignment="Center"
                          Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                         Foreground="#89b4fa"/>
+                         Foreground="{DynamicResource AccentBrush}"/>
         </Grid>
 
-        <!-- Error / status bar -->
-        <TextBlock Grid.Row="1" Text="{Binding ErrorMessage}"
-                   Foreground="#f38ba8" FontSize="12"
-                   Margin="0,0,0,12"
-                   Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
+        <!-- Error bar -->
+        <Border Grid.Row="2" Style="{StaticResource ErrorBarStyle}"
+                Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal">
+                <md:PackIcon Kind="AlertCircle" Foreground="{DynamicResource DangerBrush}"
+                             Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Foreground="{DynamicResource DangerBrush}" FontSize="13"/>
+            </StackPanel>
+        </Border>
 
-        <!-- No player selected placeholder -->
-        <Border Grid.Row="2"
+        <!-- Empty placeholder -->
+        <Border Grid.Row="3"
                 Visibility="{Binding IsPlayerFound, Converter={StaticResource InvertedBoolToVisibilityConverter}}"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
             <StackPanel HorizontalAlignment="Center">
-                <md:PackIcon Kind="AccountSearch" Width="64" Height="64"
-                             Foreground="#313244" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                <md:PackIcon Kind="AccountSearch" Width="56" Height="56"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" Margin="0,0,0,14"/>
                 <TextBlock Text="Search for a player to view their moderation history."
-                           Foreground="#6c7086" FontSize="14" HorizontalAlignment="Center"/>
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           FontSize="14" HorizontalAlignment="Center"/>
             </StackPanel>
         </Border>
 
         <!-- Player found: tabs -->
-        <TabControl Grid.Row="2"
+        <TabControl Grid.Row="3"
                     Visibility="{Binding IsPlayerFound, Converter={StaticResource BoolToVisibilityConverter}}"
                     Background="Transparent" BorderThickness="0">
 
             <TabControl.Resources>
-                <Style TargetType="TabItem" BasedOn="{StaticResource TabItemStyle}"/>
+                <Style TargetType="TabItem" BasedOn="{StaticResource PunishTabItemStyle}"/>
             </TabControl.Resources>
 
-            <!-- Tab 1: Active Punishments -->
+            <!-- Tab: Active Punishments -->
             <TabItem Header="Active Punishments">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -115,10 +136,11 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,8,0,10">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,10">
                         <Button Command="{Binding LoadActiveCommand}"
                                 Style="{StaticResource MaterialDesignOutlinedButton}"
-                                Foreground="#89b4fa" BorderBrush="#89b4fa">
+                                Foreground="{DynamicResource AccentBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}">
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="Refresh" Width="14" Height="14"
                                              VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -128,85 +150,77 @@
                     </StackPanel>
 
                     <DataGrid Grid.Row="1"
-                              ItemsSource="{Binding ActivePunishments}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              IsReadOnly="True"
-                              Background="#181825"
-                              Foreground="#cdd6f4"
-                              BorderThickness="1" BorderBrush="#313244"
-                              RowBackground="#1e1e2e"
-                              AlternatingRowBackground="#252535"
-                              GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="#313244"
-                              ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}">
-
+                              Style="{StaticResource AppDataGridStyle}"
+                              ItemsSource="{Binding ActivePunishments}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="When" Binding="{Binding CreatedAtDisplay}" Width="150">
+                            <DataGridTextColumn Header="When" Binding="{Binding CreatedAtDisplay}" Width="155" MinWidth="130">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#6c7086"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                         <Setter Property="FontFamily" Value="Consolas"/>
+                                        <Setter Property="FontSize" Value="11"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTemplateColumn Header="Action" Width="120">
+                            <DataGridTemplateColumn Header="Action" Width="130" MinWidth="100">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding ActionType}"
-                                                   Foreground="{Binding ActionType, Converter={StaticResource ActionTypeToColorConverter}}"
-                                                   VerticalAlignment="Center" Margin="8,0"
-                                                   FontWeight="SemiBold" FontSize="12"/>
+                                        <Border Margin="6,4" Style="{StaticResource MutedPillStyle}">
+                                            <TextBlock Text="{Binding ActionType}"
+                                                       Foreground="{Binding ActionType, Converter={StaticResource ActionTypeToColorConverter}}"
+                                                       FontWeight="SemiBold" FontSize="11"/>
+                                        </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="Reason" Binding="{Binding Reason}" Width="*">
+                            <DataGridTextColumn Header="Reason" Binding="{Binding Reason}" Width="*" MinWidth="120">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
+                                        <Setter Property="Margin" Value="10,0"/>
                                         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                         <Setter Property="ToolTip" Value="{Binding Reason}"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="Duration" Binding="{Binding DurationDisplay}" Width="100">
+                            <DataGridTextColumn Header="Duration" Binding="{Binding DurationDisplay}" Width="110" MinWidth="80">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#cba6f7"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PurpleBrush}"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="Expires" Binding="{Binding ExpiresDisplay}" Width="150">
+                            <DataGridTextColumn Header="Expires" Binding="{Binding ExpiresDisplay}" Width="155" MinWidth="120">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#6c7086"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                                        <Setter Property="FontSize" Value="12"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="Staff" Binding="{Binding CreatedByUsername}" Width="120">
+                            <DataGridTextColumn Header="Staff" Binding="{Binding CreatedByUsername}" Width="120" MinWidth="90">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#89b4fa"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTemplateColumn Header="Actions" Width="90"
+                            <DataGridTemplateColumn Header="Revoke" Width="90" MinWidth="80"
                                                     Visibility="{Binding DataContext.CanRevoke,
                                                         RelativeSource={RelativeSource AncestorType=UserControl},
                                                         Converter={StaticResource BoolToVisibilityConverter}}">
@@ -216,8 +230,9 @@
                                                     RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding Id}"
                                                 Style="{StaticResource MaterialDesignOutlinedButton}"
-                                                Foreground="#a6e3a1" BorderBrush="#a6e3a1"
-                                                Padding="8,4" Margin="4,2"
+                                                Foreground="{DynamicResource SuccessBrush}"
+                                                BorderBrush="{DynamicResource SuccessBrush}"
+                                                Padding="8,4" Margin="6,3"
                                                 FontSize="11">
                                             Revoke
                                         </Button>
@@ -229,7 +244,7 @@
                 </Grid>
             </TabItem>
 
-            <!-- Tab 2: History -->
+            <!-- Tab: History -->
             <TabItem Header="History">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -237,24 +252,23 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,8,0,10">
+                    <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,10">
                         <ComboBox ItemsSource="{Binding ActionTypeFilters}"
                                   SelectedItem="{Binding FilterActionType}"
                                   md:HintAssist.Hint="Action type"
                                   Style="{StaticResource MaterialDesignOutlinedComboBox}"
                                   Width="150" Foreground="White"
                                   Margin="0,0,10,0"/>
-
                         <ComboBox ItemsSource="{Binding StatusFilters}"
                                   SelectedItem="{Binding FilterStatus}"
                                   md:HintAssist.Hint="Status"
                                   Style="{StaticResource MaterialDesignOutlinedComboBox}"
                                   Width="120" Foreground="White"
                                   Margin="0,0,10,0"/>
-
                         <Button Command="{Binding LoadHistoryCommand}"
                                 Style="{StaticResource MaterialDesignOutlinedButton}"
-                                Foreground="#89b4fa" BorderBrush="#89b4fa">
+                                Foreground="{DynamicResource AccentBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}">
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="Refresh" Width="14" Height="14"
                                              VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -264,86 +278,78 @@
                     </WrapPanel>
 
                     <DataGrid Grid.Row="1"
-                              ItemsSource="{Binding History}"
-                              AutoGenerateColumns="False"
-                              CanUserAddRows="False"
-                              IsReadOnly="True"
-                              Background="#181825"
-                              Foreground="#cdd6f4"
-                              BorderThickness="1" BorderBrush="#313244"
-                              RowBackground="#1e1e2e"
-                              AlternatingRowBackground="#252535"
-                              GridLinesVisibility="Horizontal"
-                              HorizontalGridLinesBrush="#313244"
-                              ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}">
-
+                              Style="{StaticResource AppDataGridStyle}"
+                              ItemsSource="{Binding History}">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Timestamp" Binding="{Binding CreatedAtDisplay}" Width="150">
+                            <DataGridTextColumn Header="Timestamp" Binding="{Binding CreatedAtDisplay}" Width="155" MinWidth="130">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#6c7086"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                         <Setter Property="FontFamily" Value="Consolas"/>
+                                        <Setter Property="FontSize" Value="11"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTemplateColumn Header="Action" Width="130">
+                            <DataGridTemplateColumn Header="Action" Width="130" MinWidth="100">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding ActionType}"
-                                                   Foreground="{Binding ActionType, Converter={StaticResource ActionTypeToColorConverter}}"
-                                                   VerticalAlignment="Center" Margin="8,0"
-                                                   FontWeight="SemiBold" FontSize="12"/>
+                                        <Border Margin="6,4" Style="{StaticResource MutedPillStyle}">
+                                            <TextBlock Text="{Binding ActionType}"
+                                                       Foreground="{Binding ActionType, Converter={StaticResource ActionTypeToColorConverter}}"
+                                                       FontWeight="SemiBold" FontSize="11"/>
+                                        </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="Reason" Binding="{Binding Reason}" Width="*">
+                            <DataGridTextColumn Header="Reason" Binding="{Binding Reason}" Width="*" MinWidth="120">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
+                                        <Setter Property="Margin" Value="10,0"/>
                                         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                         <Setter Property="ToolTip" Value="{Binding Reason}"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="Duration" Binding="{Binding DurationDisplay}" Width="100">
+                            <DataGridTextColumn Header="Duration" Binding="{Binding DurationDisplay}" Width="110" MinWidth="80">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#cba6f7"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PurpleBrush}"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTemplateColumn Header="Status" Width="90">
+                            <DataGridTemplateColumn Header="Status" Width="100" MinWidth="80">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding StatusDisplay}"
-                                                   Foreground="{Binding StatusDisplay, Converter={StaticResource PunishmentStatusToColorConverter}}"
-                                                   VerticalAlignment="Center" Margin="8,0"
-                                                   FontSize="12"/>
+                                        <Border Margin="6,4" Style="{StaticResource MutedPillStyle}">
+                                            <TextBlock Text="{Binding StatusDisplay}"
+                                                       Foreground="{Binding StatusDisplay, Converter={StaticResource PunishmentStatusToColorConverter}}"
+                                                       FontWeight="SemiBold" FontSize="11"/>
+                                        </Border>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTextColumn Header="Staff" Binding="{Binding CreatedByUsername}" Width="120">
+                            <DataGridTextColumn Header="Staff" Binding="{Binding CreatedByUsername}" Width="120" MinWidth="90">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="Margin" Value="8,0"/>
-                                        <Setter Property="Foreground" Value="#89b4fa"/>
+                                        <Setter Property="Margin" Value="10,0"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
                                         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTemplateColumn Header="Actions" Width="90"
+                            <DataGridTemplateColumn Header="Revoke" Width="90" MinWidth="80"
                                                     Visibility="{Binding DataContext.CanRevoke,
                                                         RelativeSource={RelativeSource AncestorType=UserControl},
                                                         Converter={StaticResource BoolToVisibilityConverter}}">
@@ -353,8 +359,9 @@
                                                     RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding Id}"
                                                 Style="{StaticResource MaterialDesignOutlinedButton}"
-                                                Foreground="#a6e3a1" BorderBrush="#a6e3a1"
-                                                Padding="8,4" Margin="4,2"
+                                                Foreground="{DynamicResource SuccessBrush}"
+                                                BorderBrush="{DynamicResource SuccessBrush}"
+                                                Padding="8,4" Margin="6,3"
                                                 FontSize="11"
                                                 IsEnabled="{Binding Active}">
                                             Revoke
@@ -367,7 +374,7 @@
                 </Grid>
             </TabItem>
 
-            <!-- Tab 3: Notes -->
+            <!-- Tab: Notes -->
             <TabItem Header="Notes"
                      Visibility="{Binding CanViewNotes, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Grid>
@@ -377,10 +384,11 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,8,0,10">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,12">
                         <Button Command="{Binding LoadNotesCommand}"
                                 Style="{StaticResource MaterialDesignOutlinedButton}"
-                                Foreground="#89b4fa" BorderBrush="#89b4fa">
+                                Foreground="{DynamicResource AccentBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}">
                             <StackPanel Orientation="Horizontal">
                                 <md:PackIcon Kind="Refresh" Width="14" Height="14"
                                              VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -393,36 +401,46 @@
                         <ItemsControl ItemsSource="{Binding Notes}" Margin="0,0,0,8">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#252535" CornerRadius="6" Padding="14"
-                                            Margin="0,0,0,8">
+                                    <Border Style="{StaticResource NoteCardStyle}">
                                         <Grid>
                                             <Grid.RowDefinitions>
                                                 <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
-                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
-                                                <md:PackIcon Kind="AccountCircle" Width="16" Height="16"
-                                                             Foreground="#89b4fa" VerticalAlignment="Center"
-                                                             Margin="0,0,6,0"/>
+                                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,8">
+                                                <Border Width="26" Height="26" CornerRadius="13"
+                                                        Background="{DynamicResource InfoBadgeBgBrush}"
+                                                        Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding CreatedByUsername[0]}"
+                                                               FontSize="11" FontWeight="Bold"
+                                                               Foreground="{DynamicResource AccentBrush}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"/>
+                                                </Border>
                                                 <TextBlock Text="{Binding CreatedByUsername}"
-                                                           Foreground="#89b4fa" FontSize="12" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AccentBrush}"
+                                                           FontSize="12" FontWeight="SemiBold"
                                                            VerticalAlignment="Center"
                                                            Margin="0,0,12,0"/>
                                                 <TextBlock Text="{Binding CreatedAtDisplay}"
-                                                           Foreground="#6c7086" FontSize="11"
-                                                           VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource TextMutedBrush}"
+                                                           FontSize="11" VerticalAlignment="Center"
                                                            FontFamily="Consolas"/>
-                                                <TextBlock Text="{Binding Visibility}"
-                                                           Foreground="#45475a" FontSize="11"
-                                                           VerticalAlignment="Center"
-                                                           Margin="12,0,0,0"/>
+                                                <Border Background="{DynamicResource MutedBadgeBgBrush}"
+                                                        CornerRadius="8" Padding="7,2" Margin="10,0,0,0"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Visibility}"
+                                                               Foreground="{DynamicResource TextMutedBrush}"
+                                                               FontSize="10"/>
+                                                </Border>
                                             </StackPanel>
 
                                             <TextBlock Grid.Row="1"
                                                        Text="{Binding Note}"
-                                                       Foreground="#cdd6f4" FontSize="13"
-                                                       TextWrapping="Wrap"/>
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                                       FontSize="13" TextWrapping="Wrap"
+                                                       LineHeight="20"/>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -433,7 +451,8 @@
                     <!-- Add note -->
                     <Border Grid.Row="2"
                             Visibility="{Binding CanCreateNotes, Converter={StaticResource BoolToVisibilityConverter}}"
-                            Background="#252535" CornerRadius="6" Padding="14" Margin="0,4,0,0">
+                            Style="{StaticResource NoteCardStyle}"
+                            Margin="0,8,0,0">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -445,7 +464,7 @@
                                      md:HintAssist.Hint="Add a staff note…"
                                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
                                      Foreground="White"
-                                     Margin="0,0,10,0"
+                                     Margin="0,0,12,0"
                                      IsEnabled="{Binding IsAddingNote, Converter={StaticResource InvertedBoolConverter}}">
                                 <TextBox.InputBindings>
                                     <KeyBinding Key="Return" Modifiers="Ctrl" Command="{Binding AddNoteCommand}"/>
@@ -455,11 +474,11 @@
                             <Button Grid.Column="1"
                                     Command="{Binding AddNoteCommand}"
                                     Style="{StaticResource MaterialDesignRaisedButton}"
-                                    Background="#89b4fa" Foreground="#1e1e2e"
+                                    Background="{DynamicResource AccentBrush}" Foreground="#1e1e2e"
                                     IsEnabled="{Binding IsAddingNote, Converter={StaticResource InvertedBoolConverter}}">
                                 <StackPanel Orientation="Horizontal">
                                     <md:PackIcon Kind="Plus" Width="14" Height="14"
-                                                 VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                 VerticalAlignment="Center" Margin="0,0,5,0"/>
                                     <TextBlock Text="Add Note"/>
                                 </StackPanel>
                             </Button>

@@ -3,52 +3,126 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:StaffControlSuite.Converters"
-             Background="#1e1e2e">
+             Background="{DynamicResource AppBackgroundBrush}">
 
     <UserControl.Resources>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter"/>
+        <converters:InvertedBoolToVisibilityConverter x:Key="InvertedBoolToVisibilityConverter"/>
     </UserControl.Resources>
+
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource PageFadeIn}"/>
+        </EventTrigger>
+    </UserControl.Triggers>
 
     <Grid>
         <Grid.Background>
             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#1e1e2e" Offset="0"/>
-                <GradientStop Color="#181825" Offset="1"/>
+                <GradientStop Color="#181825" Offset="0"/>
+                <GradientStop Color="#1e1e2e" Offset="0.5"/>
+                <GradientStop Color="#13131e" Offset="1"/>
             </LinearGradientBrush>
         </Grid.Background>
+
+        <!-- Decorative accent blobs -->
+        <Ellipse Width="500" Height="500"
+                 HorizontalAlignment="Left" VerticalAlignment="Top"
+                 Margin="-200,-200,0,0" Opacity="0.05">
+            <Ellipse.Fill>
+                <RadialGradientBrush>
+                    <GradientStop Color="#7c3aed" Offset="0"/>
+                    <GradientStop Color="Transparent" Offset="1"/>
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
+        <Ellipse Width="400" Height="400"
+                 HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                 Margin="0,0,-160,-160" Opacity="0.05">
+            <Ellipse.Fill>
+                <RadialGradientBrush>
+                    <GradientStop Color="#a855f7" Offset="0"/>
+                    <GradientStop Color="Transparent" Offset="1"/>
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
 
         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
                         Width="420" Margin="20">
 
-                <!-- Logo / Title -->
-                <StackPanel HorizontalAlignment="Center" Margin="0,40,0,32">
-                    <md:PackIcon Kind="ShieldAccount"
-                                 Width="56" Height="56"
-                                 Foreground="#89b4fa"
-                                 HorizontalAlignment="Center"
-                                 Margin="0,0,0,12"/>
+                <!-- Branding area -->
+                <StackPanel HorizontalAlignment="Center" Margin="0,48,0,36">
+                    <!-- Logo image (when configured) -->
+                    <Border Width="72" Height="72"
+                            CornerRadius="16"
+                            HorizontalAlignment="Center"
+                            Margin="0,0,0,16"
+                            Visibility="{Binding HasLogo, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#252540" Offset="0"/>
+                                <GradientStop Color="#1e1e35" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Image Source="{Binding LogoImagePath}"
+                               Stretch="Uniform"
+                               Margin="8"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </Border>
+
+                    <!-- Shield icon fallback (when no logo) -->
+                    <Border Width="72" Height="72"
+                            CornerRadius="16"
+                            HorizontalAlignment="Center"
+                            Margin="0,0,0,16"
+                            Visibility="{Binding HasLogo, Converter={StaticResource InvertedBoolToVisibilityConverter}}">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="#252540" Offset="0"/>
+                                <GradientStop Color="#1e1e35" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <Border.Effect>
+                            <DropShadowEffect Color="#7c3aed" BlurRadius="20" ShadowDepth="0" Opacity="0.25"/>
+                        </Border.Effect>
+                        <md:PackIcon Kind="ShieldAccount"
+                                     Width="38" Height="38"
+                                     Foreground="{DynamicResource AccentBrush}"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center"/>
+                    </Border>
+
                     <TextBlock Text="Staff Control Suite"
-                               FontSize="28" FontWeight="Bold"
-                               Foreground="White"
+                               FontSize="26" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                HorizontalAlignment="Center"/>
                     <TextBlock Text="Minecraft Server Management"
                                FontSize="13"
-                               Foreground="#6c7086"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                HorizontalAlignment="Center"
-                               Margin="0,4,0,0"/>
+                               Margin="0,5,0,0"/>
                 </StackPanel>
 
                 <!-- Connection Card -->
-                <md:Card Padding="24" Margin="0,0,0,16"
-                         Background="#313244"
-                         md:ElevationAssist.Elevation="Dp4">
+                <Border Background="{DynamicResource CardBgBrush}"
+                        BorderBrush="{DynamicResource SubtleBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="24"
+                        Margin="0,0,0,12"
+                        Effect="{StaticResource CardShadow}">
                     <StackPanel>
-                        <TextBlock Text="Connection Settings"
-                                   FontSize="13" FontWeight="Medium"
-                                   Foreground="#89b4fa"
-                                   Margin="0,0,0,16"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <md:PackIcon Kind="ServerNetwork" Width="14" Height="14"
+                                         Foreground="{DynamicResource AccentBrush}"
+                                         VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Connection"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
 
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -61,80 +135,90 @@
                                      Text="{Binding ProxyHost, UpdateSourceTrigger=PropertyChanged}"
                                      md:HintAssist.Hint="Proxy Host"
                                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                     Foreground="White"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
                                      IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
 
                             <TextBox Grid.Column="2"
                                      Text="{Binding ProxyPort, UpdateSourceTrigger=PropertyChanged}"
                                      md:HintAssist.Hint="Port"
                                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                     Foreground="White"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
                                      IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
                         </Grid>
                     </StackPanel>
-                </md:Card>
+                </Border>
 
                 <!-- Login Card -->
-                <md:Card Padding="24"
-                         Background="#313244"
-                         md:ElevationAssist.Elevation="Dp4">
+                <Border Background="{DynamicResource CardBgBrush}"
+                        BorderBrush="{DynamicResource SubtleBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="24"
+                        Effect="{StaticResource CardShadow}">
                     <StackPanel>
-                        <TextBlock Text="Sign In"
-                                   FontSize="18" FontWeight="SemiBold"
-                                   Foreground="White"
-                                   Margin="0,0,0,20"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <md:PackIcon Kind="Login" Width="14" Height="14"
+                                         Foreground="{DynamicResource TextSecondaryBrush}"
+                                         VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Sign In"
+                                       FontSize="17" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
 
                         <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
                                  md:HintAssist.Hint="Username"
                                  Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                 Foreground="White"
-                                 Margin="0,0,0,16"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 Margin="0,0,0,14"
                                  IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
 
                         <PasswordBox x:Name="PasswordBox"
                                      md:HintAssist.Hint="Password"
                                      Style="{StaticResource MaterialDesignOutlinedPasswordBox}"
-                                     Foreground="White"
-                                     Margin="0,0,0,16"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     Margin="0,0,0,14"
                                      IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
 
-                        <!-- Error Message -->
-                        <Border Background="#3b0000" CornerRadius="4" Padding="12,8"
-                                Margin="0,0,0,16"
+                        <!-- Error message -->
+                        <Border Style="{StaticResource ErrorBarStyle}"
                                 Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
                             <StackPanel Orientation="Horizontal">
-                                <md:PackIcon Kind="AlertCircle" Foreground="#f38ba8"
+                                <md:PackIcon Kind="AlertCircle"
+                                             Foreground="{DynamicResource DangerBrush}"
                                              Width="16" Height="16" VerticalAlignment="Center"
                                              Margin="0,0,8,0"/>
                                 <TextBlock Text="{Binding ErrorMessage}"
-                                           Foreground="#f38ba8"
+                                           Foreground="{DynamicResource DangerBrush}"
                                            FontSize="13"
                                            TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 
-                        <!-- Loading Indicator -->
+                        <!-- Loading indicator -->
                         <ProgressBar IsIndeterminate="True"
-                                     Margin="0,0,0,16"
+                                     Height="3"
+                                     Margin="0,0,0,14"
                                      Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                                     Foreground="#89b4fa"/>
+                                     Foreground="{DynamicResource AccentBrush}"/>
 
                         <Button Content="CONNECT &amp; LOGIN"
                                 Command="{Binding LoginCommand}"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
-                                Background="#89b4fa"
-                                Foreground="#1e1e2e"
+                                Background="{DynamicResource AccentBrush}"
+                                Foreground="#0f0f1a"
                                 FontWeight="Bold"
+                                FontSize="13"
                                 Height="44"
                                 IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}"/>
                     </StackPanel>
-                </md:Card>
+                </Border>
 
-                <TextBlock Text="Staff Control Suite v1.0"
+                <TextBlock Text="Staff Control Suite v1.1.3"
                            FontSize="11"
-                           Foreground="#45475a"
+                           Foreground="{DynamicResource TextMutedBrush}"
                            HorizontalAlignment="Center"
-                           Margin="0,20,0,40"/>
+                           Margin="0,20,0,48"/>
             </StackPanel>
         </ScrollViewer>
     </Grid>

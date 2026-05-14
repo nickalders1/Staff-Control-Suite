@@ -10,10 +10,59 @@
                 <ResourceDictionary Source="Resources/Styles.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Runtime-overridable accent brushes (updated by AppThemeService) -->
+            <!-- ── Accent brushes (updated by AppThemeService) ── -->
             <SolidColorBrush x:Key="NavHighlightBrush"    Color="#2a2a4a"/>
             <SolidColorBrush x:Key="AccentBrush"          Color="#89b4fa"/>
             <SolidColorBrush x:Key="AccentGradientBrush"  Color="#89b4fa"/>
+
+            <!-- ── Surface layers (dark → light) ── -->
+            <SolidColorBrush x:Key="AppBackgroundBrush"   Color="#1e1e2e"/>
+            <SolidColorBrush x:Key="SidebarBgBrush"       Color="#181825"/>
+            <SolidColorBrush x:Key="CardBgBrush"          Color="#313244"/>
+            <SolidColorBrush x:Key="ElevatedCardBgBrush"  Color="#3a3a5c"/>
+            <SolidColorBrush x:Key="InputBgBrush"         Color="#252535"/>
+
+            <!-- ── Table surfaces ── -->
+            <SolidColorBrush x:Key="TableBgBrush"         Color="#181825"/>
+            <SolidColorBrush x:Key="TableRowBgBrush"      Color="#1e1e2e"/>
+            <SolidColorBrush x:Key="TableAltRowBgBrush"   Color="#252535"/>
+            <SolidColorBrush x:Key="TableHoverBgBrush"    Color="#2a2a3f"/>
+            <SolidColorBrush x:Key="ConsoleBgBrush"       Color="#11111b"/>
+
+            <!-- ── Border ── -->
+            <SolidColorBrush x:Key="AppBorderBrush"       Color="#313244"/>
+            <SolidColorBrush x:Key="SubtleBorderBrush"    Color="#252540"/>
+
+            <!-- ── Text ── -->
+            <SolidColorBrush x:Key="TextPrimaryBrush"     Color="#cdd6f4"/>
+            <SolidColorBrush x:Key="TextSecondaryBrush"   Color="#6c7086"/>
+            <SolidColorBrush x:Key="TextMutedBrush"       Color="#45475a"/>
+
+            <!-- ── Semantic / status ── -->
+            <SolidColorBrush x:Key="SuccessBrush"         Color="#a6e3a1"/>
+            <SolidColorBrush x:Key="WarningBrush"         Color="#f9e2af"/>
+            <SolidColorBrush x:Key="DangerBrush"          Color="#f38ba8"/>
+            <SolidColorBrush x:Key="InfoBrush"            Color="#89b4fa"/>
+            <SolidColorBrush x:Key="PurpleBrush"          Color="#cba6f7"/>
+
+            <!-- ── Status badge backgrounds (semi-transparent) ── -->
+            <SolidColorBrush x:Key="SuccessBadgeBgBrush"  Color="#1a3a1a"/>
+            <SolidColorBrush x:Key="DangerBadgeBgBrush"   Color="#3a1a1a"/>
+            <SolidColorBrush x:Key="WarningBadgeBgBrush"  Color="#3a321a"/>
+            <SolidColorBrush x:Key="InfoBadgeBgBrush"     Color="#1a2a3a"/>
+            <SolidColorBrush x:Key="PurpleBadgeBgBrush"   Color="#2a1a3a"/>
+            <SolidColorBrush x:Key="MutedBadgeBgBrush"    Color="#2a2a35"/>
+
+            <!-- ── Card shadow effect (shared, freezable) ── -->
+            <DropShadowEffect x:Key="CardShadow"
+                              Color="#000000" BlurRadius="14" ShadowDepth="2"
+                              Opacity="0.32" Direction="270"/>
+            <DropShadowEffect x:Key="ElevatedShadow"
+                              Color="#000000" BlurRadius="24" ShadowDepth="4"
+                              Opacity="0.4" Direction="270"/>
+            <DropShadowEffect x:Key="SubtleShadow"
+                              Color="#000000" BlurRadius="8" ShadowDepth="1"
+                              Opacity="0.2" Direction="270"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

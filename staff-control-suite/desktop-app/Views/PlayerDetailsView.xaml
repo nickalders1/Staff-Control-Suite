@@ -288,20 +288,20 @@
                                                        Foreground="#cdd6f4" TextTrimming="CharacterEllipsis"
                                                        ToolTip="{Binding Reason}"/>
                                             <TextBlock FontSize="11" Foreground="#6c7086">
-                                                <Run Text="{Binding CreatedByUsername}"/>
+                                                <Run Text="{Binding CreatedByUsername, Mode=OneWay}"/>
                                                 <Run Text=" · "/>
-                                                <Run Text="{Binding CreatedAtDisplay}"/>
+                                                <Run Text="{Binding CreatedAtDisplay, Mode=OneWay}"/>
                                             </TextBlock>
                                             <!-- Revoke info (visible only when revoked) -->
                                             <TextBlock FontSize="11" Foreground="#45475a"
                                                        Visibility="{Binding RevokedByDisplay,
                                                            Converter={StaticResource StringToVisibilityConverter}}">
                                                 <Run Text="Revoked by "/>
-                                                <Run Text="{Binding RevokedByDisplay}" Foreground="#6c7086"/>
+                                                <Run Text="{Binding RevokedByDisplay, Mode=OneWay}" Foreground="#6c7086"/>
                                                 <Run Text=" · "/>
-                                                <Run Text="{Binding RevokedAtDisplay}"/>
+                                                <Run Text="{Binding RevokedAtDisplay, Mode=OneWay}"/>
                                                 <Run Text=" — "/>
-                                                <Run Text="{Binding RevokeReason}" Foreground="#585b70"/>
+                                                <Run Text="{Binding RevokeReason, Mode=OneWay}" Foreground="#585b70"/>
                                             </TextBlock>
                                         </StackPanel>
 

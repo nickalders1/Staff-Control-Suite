@@ -3,38 +3,55 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:StaffControlSuite.Converters"
-             Background="#1e1e2e">
+             Background="{DynamicResource AppBackgroundBrush}">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:StatusToColorConverter x:Key="StatusToColorConverter"/>
     </UserControl.Resources>
 
-    <Grid Margin="24">
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource PageFadeIn}"/>
+        </EventTrigger>
+    </UserControl.Triggers>
+
+    <Grid Margin="28">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
+        <!-- Page header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Players" Style="{StaticResource PageTitleStyle}"/>
+            <TextBlock Text="Browse and manage online and offline players"
+                       Style="{StaticResource PageSubtitleStyle}"/>
+        </StackPanel>
+
         <!-- Toolbar -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
+        <Grid Grid.Row="1" Margin="0,0,0,16">
             <StackPanel Orientation="Horizontal">
                 <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                          md:HintAssist.Hint="Search by name..."
                          Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                         Width="220" Foreground="White"
+                         Width="220"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
                          Margin="0,0,12,0"/>
 
                 <ComboBox ItemsSource="{Binding ServerFilter}"
                           SelectedItem="{Binding SelectedServerFilter}"
                           md:HintAssist.Hint="All Servers"
                           Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                          Width="160" Foreground="White"
+                          Width="160"
+                          Foreground="{DynamicResource TextPrimaryBrush}"
                           Margin="0,0,12,0"/>
 
                 <Button Command="{Binding LoadPlayersCommand}"
                         Style="{StaticResource MaterialDesignOutlinedButton}"
-                        Foreground="#89b4fa" BorderBrush="#89b4fa">
+                        Foreground="{DynamicResource AccentBrush}"
+                        BorderBrush="{DynamicResource AccentBrush}">
                     <StackPanel Orientation="Horizontal">
                         <md:PackIcon Kind="Refresh" Width="16" Height="16"
                                      VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -42,39 +59,28 @@
                     </StackPanel>
                 </Button>
 
-                <ProgressBar IsIndeterminate="True" Width="60" Height="4"
-                             Margin="12,0,0,0"
+                <ProgressBar IsIndeterminate="True" Width="60" Height="3"
+                             Margin="12,0,0,0" VerticalAlignment="Center"
                              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                             Foreground="#89b4fa"/>
+                             Foreground="{DynamicResource AccentBrush}"/>
             </StackPanel>
 
             <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center"
-                       Foreground="#6c7086" FontSize="12">
+                       Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12">
                 <Run Text="{Binding FilteredCount}"/>
                 <Run Text=" players"/>
             </TextBlock>
         </Grid>
 
         <!-- DataGrid -->
-        <DataGrid Grid.Row="1"
+        <DataGrid Grid.Row="2"
+                  Style="{StaticResource AppDataGridStyle}"
                   ItemsSource="{Binding Players}"
-                  AutoGenerateColumns="False"
-                  CanUserAddRows="False"
-                  IsReadOnly="True"
-                  SelectionMode="Single"
-                  Background="#181825"
-                  Foreground="#cdd6f4"
-                  BorderThickness="1" BorderBrush="#313244"
-                  RowBackground="#1e1e2e"
-                  AlternatingRowBackground="#252535"
-                  GridLinesVisibility="Horizontal"
-                  HorizontalGridLinesBrush="#313244"
-                  ColumnHeaderStyle="{StaticResource MaterialDesignDataGridColumnHeader}"
                   MouseDoubleClick="DataGrid_MouseDoubleClick">
 
             <DataGrid.Columns>
-                <!-- Online Status -->
-                <DataGridTemplateColumn Header="" Width="28">
+                <!-- Online status dot -->
+                <DataGridTemplateColumn Header="" Width="28" MinWidth="28">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Ellipse Width="8" Height="8"
@@ -84,95 +90,110 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="140">
+                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="150" MinWidth="110">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
+                            <Setter Property="Margin" Value="10,0"/>
                             <Setter Property="FontWeight" Value="Medium"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding Name}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Server" Binding="{Binding ServerId}" Width="100">
+                <DataGridTextColumn Header="Server" Binding="{Binding ServerId}" Width="120" MinWidth="90">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#89b4fa"/>
+                            <Setter Property="Margin" Value="10,0"/>
+                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                            <Setter Property="FontFamily" Value="Consolas"/>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding ServerId}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Header="World" Binding="{Binding World}" Width="100">
+                <DataGridTextColumn Header="World" Binding="{Binding World}" Width="110" MinWidth="80">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#6c7086"/>
+                            <Setter Property="Margin" Value="10,0"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                            <Setter Property="ToolTip" Value="{Binding World}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Gamemode" Binding="{Binding Gamemode}" Width="120">
+                <DataGridTextColumn Header="Gamemode" Binding="{Binding Gamemode}" Width="120" MinWidth="90">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
+                            <Setter Property="Margin" Value="10,0"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                             <Setter Property="ToolTip" Value="{Binding Gamemode}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Ping" Binding="{Binding PingDisplay}" Width="70">
+                <DataGridTextColumn Header="Ping" Binding="{Binding PingDisplay}" Width="70" MinWidth="60">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#f9e2af"/>
+                            <Setter Property="Margin" Value="10,0"/>
+                            <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                            <Setter Property="HorizontalAlignment" Value="Right"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTemplateColumn Header="Health" Width="100">
+                <DataGridTemplateColumn Header="Health" Width="110" MinWidth="90">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Margin="8,4" VerticalAlignment="Center">
+                            <StackPanel Margin="10,4" VerticalAlignment="Center">
                                 <ProgressBar Value="{Binding Health}"
                                              Maximum="20"
-                                             Height="6"
-                                             Foreground="#f38ba8"
-                                             Background="#3a3a4a"/>
+                                             Height="5"
+                                             Foreground="{DynamicResource DangerBrush}"
+                                             Background="{DynamicResource TableAltRowBgBrush}"/>
                                 <TextBlock Text="{Binding Health, StringFormat={}{0:F0}/20}"
-                                           FontSize="10" Foreground="#6c7086"
-                                           HorizontalAlignment="Center"/>
+                                           FontSize="10"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,2,0,0"/>
                             </StackPanel>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTextColumn Header="Playtime" Binding="{Binding PlaytimeDisplay}" Width="90">
+                <DataGridTextColumn Header="Playtime" Binding="{Binding PlaytimeDisplay}" Width="95" MinWidth="75">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#6c7086"/>
+                            <Setter Property="Margin" Value="10,0"/>
+                            <Setter Property="Foreground" Value="{DynamicResource PurpleBrush}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Header="Last Seen" Binding="{Binding LastJoinedDisplay}" Width="130">
+                <DataGridTextColumn Header="Last Seen" Binding="{Binding LastJoinedDisplay}" Width="155" MinWidth="120">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="VerticalAlignment" Value="Center"/>
-                            <Setter Property="Margin" Value="8,0"/>
-                            <Setter Property="Foreground" Value="#6c7086"/>
+                            <Setter Property="Margin" Value="10,0"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                            <Setter Property="FontFamily" Value="Consolas"/>
+                            <Setter Property="FontSize" Value="11"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTemplateColumn Header="Actions" Width="70"
+                <DataGridTemplateColumn Header="Actions" Width="70" MinWidth="60"
                                         Visibility="{Binding DataContext.CanPunish,
                                             RelativeSource={RelativeSource AncestorType=UserControl},
                                             Converter={StaticResource BoolToVisibilityConverter}}">
@@ -183,7 +204,7 @@
                                             RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
                                         Style="{StaticResource MaterialDesignIconButton}"
-                                        Foreground="#f38ba8"
+                                        Foreground="{DynamicResource DangerBrush}"
                                         ToolTip="Punish player" Width="28" Height="28">
                                     <md:PackIcon Kind="Gavel" Width="14" Height="14"/>
                                 </Button>

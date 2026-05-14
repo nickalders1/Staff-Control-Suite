@@ -3,280 +3,342 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:StaffControlSuite.Converters"
-             Background="#1e1e2e">
+             Background="{DynamicResource AppBackgroundBrush}">
 
     <UserControl.Resources>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <converters:BoolToVisibilityConverter         x:Key="BoolToVisibilityConverter" />
         <converters:InvertedBoolToVisibilityConverter x:Key="InvertedBoolToVisibilityConverter" />
-
-        <Style x:Key="NavItemStyle" TargetType="ListBoxItem">
-            <Setter Property="Padding" Value="16,10"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListBoxItem">
-                        <Border x:Name="Border"
-                                Background="{TemplateBinding Background}"
-                                CornerRadius="6"
-                                Margin="8,2"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background"
-                                        Value="{DynamicResource NavHighlightBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="#252535"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
     </UserControl.Resources>
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="224"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Sidebar -->
-        <Border Grid.Column="0" Background="#181825"
-                BorderThickness="0,0,1,0" BorderBrush="#313244">
+        <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+        <Border Grid.Column="0"
+                BorderThickness="0,0,1,0"
+                BorderBrush="{DynamicResource SubtleBorderBrush}">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#181825" Offset="0"/>
+                    <GradientStop Color="#13131e" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+
             <DockPanel>
 
-                <!-- Sidebar Header -->
-                <Border DockPanel.Dock="Top" Padding="16,20,16,16"
-                        BorderThickness="0,0,0,1" BorderBrush="#313244">
+                <!-- Branding header -->
+                <Border DockPanel.Dock="Top"
+                        Padding="16,18,16,14"
+                        BorderThickness="0,0,0,1"
+                        BorderBrush="{DynamicResource SubtleBorderBrush}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="ShieldAccount"
-                                         Width="24" Height="24"
-                                         Foreground="#89b4fa"
-                                         VerticalAlignment="Center"
-                                         Margin="0,0,8,0"/>
-                            <TextBlock Text="{Binding SidebarTitle, FallbackValue='Staff Control'}"
-                                       FontSize="16" FontWeight="Bold"
-                                       Foreground="White"
-                                       VerticalAlignment="Center"/>
+                            <!-- Logo image (when set) -->
+                            <Image Source="{Binding LogoImagePath}"
+                                   Width="36" Height="36"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                   VerticalAlignment="Center"
+                                   Margin="0,0,11,0"
+                                   Visibility="{Binding HasLogo, Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                            <!-- Icon fallback (no logo) -->
+                            <Border Width="36" Height="36" CornerRadius="9"
+                                    VerticalAlignment="Center"
+                                    Margin="0,0,11,0"
+                                    Visibility="{Binding HasLogo, Converter={StaticResource InvertedBoolToVisibilityConverter}}">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <GradientStop Color="#2a3a5e" Offset="0"/>
+                                        <GradientStop Color="#1a2a4a" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <md:PackIcon Kind="ShieldAccount"
+                                             Width="20" Height="20"
+                                             Foreground="{DynamicResource AccentBrush}"
+                                             HorizontalAlignment="Center"
+                                             VerticalAlignment="Center"/>
+                            </Border>
+
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding SidebarTitle, FallbackValue='Staff Control'}"
+                                           FontSize="14" FontWeight="Bold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBlock Text="{Binding SidebarSubtitle}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
                         </StackPanel>
-                        <TextBlock Text="{Binding SidebarSubtitle}"
-                                   FontSize="11"
-                                   Foreground="#6c7086"
-                                   Margin="0,4,0,0"/>
                     </StackPanel>
                 </Border>
 
-                <!-- Logout at Bottom -->
-                <Border DockPanel.Dock="Bottom" Padding="8,8"
-                        BorderThickness="0,1,0,0" BorderBrush="#313244">
+                <!-- User info + logout at bottom -->
+                <Border DockPanel.Dock="Bottom"
+                        Padding="10,10"
+                        BorderThickness="0,1,0,0"
+                        BorderBrush="{DynamicResource SubtleBorderBrush}">
                     <StackPanel>
-                        <!-- User Info -->
-                        <Border Padding="16,10,16,10" Margin="0,0,0,4">
-                            <StackPanel Orientation="Horizontal">
-                                <Border Width="32" Height="32"
-                                        CornerRadius="16"
-                                        Background="#313244">
+                        <!-- User profile card -->
+                        <Border CornerRadius="8" Padding="10,8" Margin="0,0,0,8">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#1e1e35" Offset="0"/>
+                                    <GradientStop Color="#252540" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Avatar bubble -->
+                                <Border Grid.Column="0"
+                                        Width="34" Height="34" CornerRadius="17"
+                                        VerticalAlignment="Center">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#2a3a5e" Offset="0"/>
+                                            <GradientStop Color="#1a2a4a" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
                                     <TextBlock Text="{Binding UserInitial}"
                                                FontSize="14" FontWeight="Bold"
-                                               Foreground="#89b4fa"
+                                               Foreground="{DynamicResource AccentBrush}"
                                                HorizontalAlignment="Center"
                                                VerticalAlignment="Center"/>
                                 </Border>
-                                <StackPanel Margin="10,0,0,0" VerticalAlignment="Center">
+
+                                <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding Username}"
-                                               FontSize="13" FontWeight="Medium"
-                                               Foreground="White"/>
+                                               FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"/>
                                     <TextBlock Text="{Binding UserRole}"
                                                FontSize="11"
-                                               Foreground="#6c7086"/>
+                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
                                 </StackPanel>
-                            </StackPanel>
+                            </Grid>
                         </Border>
 
+                        <!-- Logout button -->
                         <Button Command="{Binding LogoutCommand}"
                                 Style="{StaticResource MaterialDesignOutlinedButton}"
-                                Foreground="#f38ba8"
-                                BorderBrush="#f38ba8"
+                                Foreground="{DynamicResource DangerBrush}"
+                                BorderBrush="{DynamicResource DangerBrush}"
                                 HorizontalAlignment="Stretch"
-                                Margin="8,0">
+                                Padding="0,6">
                             <StackPanel Orientation="Horizontal">
-                                <md:PackIcon Kind="Logout" Width="16" Height="16"
+                                <md:PackIcon Kind="Logout" Width="15" Height="15"
                                              VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="Logout"/>
+                                <TextBlock Text="Sign Out" FontSize="13"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
                 </Border>
 
-                <!-- Navigation Items -->
-                <ListBox x:Name="NavListBox"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         Padding="0,8">
+                <!-- Navigation -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <ListBox x:Name="NavListBox"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Padding="0,10,0,4">
 
-                    <!-- Overview -->
-                    <ListBoxItem Tag="Overview" Style="{StaticResource NavItemStyle}">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="ViewDashboard" Width="20" Height="20"
-                                         Foreground="#89b4fa" VerticalAlignment="Center"
-                                         Margin="0,0,12,0"/>
-                            <TextBlock Text="Overview" Foreground="#cdd6f4"
-                                       FontSize="14" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListBoxItem>
+                            <ListBoxItem Tag="Overview" Style="{StaticResource SidebarNavItemStyle}">
+                                <StackPanel Orientation="Horizontal">
+                                    <md:PackIcon Kind="ViewDashboard" Width="18" Height="18"
+                                                 Foreground="{DynamicResource AccentBrush}"
+                                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <TextBlock Text="Overview"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ListBoxItem>
 
-                    <!-- Servers -->
-                    <ListBoxItem Tag="Servers" Style="{StaticResource NavItemStyle}"
-                                 Visibility="{Binding CanViewServers, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="Server" Width="20" Height="20"
-                                         Foreground="#89b4fa" VerticalAlignment="Center"
-                                         Margin="0,0,12,0"/>
-                            <TextBlock Text="Servers" Foreground="#cdd6f4"
-                                       FontSize="14" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListBoxItem>
+                            <ListBoxItem Tag="Servers" Style="{StaticResource SidebarNavItemStyle}"
+                                         Visibility="{Binding CanViewServers, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <md:PackIcon Kind="Server" Width="18" Height="18"
+                                                 Foreground="{DynamicResource AccentBrush}"
+                                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <TextBlock Text="Servers"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ListBoxItem>
 
-                    <!-- Console -->
-                    <ListBoxItem Tag="Console" Style="{StaticResource NavItemStyle}"
-                                 Visibility="{Binding CanViewConsole, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="Console" Width="20" Height="20"
-                                         Foreground="#89b4fa" VerticalAlignment="Center"
-                                         Margin="0,0,12,0"/>
-                            <TextBlock Text="Console" Foreground="#cdd6f4"
-                                       FontSize="14" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListBoxItem>
+                            <ListBoxItem Tag="Console" Style="{StaticResource SidebarNavItemStyle}"
+                                         Visibility="{Binding CanViewConsole, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <md:PackIcon Kind="Console" Width="18" Height="18"
+                                                 Foreground="{DynamicResource AccentBrush}"
+                                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <TextBlock Text="Console"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ListBoxItem>
 
-                    <!-- Players -->
-                    <ListBoxItem Tag="Players" Style="{StaticResource NavItemStyle}"
-                                 Visibility="{Binding CanViewPlayers, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="AccountGroup" Width="20" Height="20"
-                                         Foreground="#89b4fa" VerticalAlignment="Center"
-                                         Margin="0,0,12,0"/>
-                            <TextBlock Text="Players" Foreground="#cdd6f4"
-                                       FontSize="14" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListBoxItem>
+                            <ListBoxItem Tag="Players" Style="{StaticResource SidebarNavItemStyle}"
+                                         Visibility="{Binding CanViewPlayers, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <md:PackIcon Kind="AccountGroup" Width="18" Height="18"
+                                                 Foreground="{DynamicResource AccentBrush}"
+                                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <TextBlock Text="Players"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ListBoxItem>
 
-                    <!-- Users & Roles -->
-                    <ListBoxItem Tag="UsersRoles" Style="{StaticResource NavItemStyle}"
-                                 Visibility="{Binding CanViewUsers, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="AccountCog" Width="20" Height="20"
-                                         Foreground="#89b4fa" VerticalAlignment="Center"
-                                         Margin="0,0,12,0"/>
-                            <TextBlock Text="Users &amp; Roles" Foreground="#cdd6f4"
-                                       FontSize="14" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListBoxItem>
+                            <ListBoxItem Tag="Moderation" Style="{StaticResource SidebarNavItemStyle}"
+                                         Visibility="{Binding CanViewModeration, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <md:PackIcon Kind="Gavel" Width="18" Height="18"
+                                                 Foreground="{DynamicResource DangerBrush}"
+                                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <TextBlock Text="Moderation"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ListBoxItem>
 
-                    <!-- Settings -->
-                    <ListBoxItem Tag="Settings" Style="{StaticResource NavItemStyle}"
-                                 Visibility="{Binding CanViewSettings, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="Cog" Width="20" Height="20"
-                                         Foreground="#89b4fa" VerticalAlignment="Center"
-                                         Margin="0,0,12,0"/>
-                            <TextBlock Text="Settings" Foreground="#cdd6f4"
-                                       FontSize="14" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListBoxItem>
+                            <ListBoxItem Tag="UsersRoles" Style="{StaticResource SidebarNavItemStyle}"
+                                         Visibility="{Binding CanViewUsers, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <md:PackIcon Kind="AccountCog" Width="18" Height="18"
+                                                 Foreground="{DynamicResource AccentBrush}"
+                                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <TextBlock Text="Users &amp; Roles"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ListBoxItem>
 
-                    <!-- Audit Logs -->
-                    <ListBoxItem Tag="AuditLogs" Style="{StaticResource NavItemStyle}"
-                                 Visibility="{Binding CanViewAudit, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="History" Width="20" Height="20"
-                                         Foreground="#89b4fa" VerticalAlignment="Center"
-                                         Margin="0,0,12,0"/>
-                            <TextBlock Text="Audit Logs" Foreground="#cdd6f4"
-                                       FontSize="14" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListBoxItem>
+                            <ListBoxItem Tag="AuditLogs" Style="{StaticResource SidebarNavItemStyle}"
+                                         Visibility="{Binding CanViewAudit, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <md:PackIcon Kind="History" Width="18" Height="18"
+                                                 Foreground="{DynamicResource AccentBrush}"
+                                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <TextBlock Text="Audit Logs"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ListBoxItem>
 
-                    <!-- Moderation -->
-                    <ListBoxItem Tag="Moderation" Style="{StaticResource NavItemStyle}"
-                                 Visibility="{Binding CanViewModeration, Converter={StaticResource BoolToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="Gavel" Width="20" Height="20"
-                                         Foreground="#89b4fa" VerticalAlignment="Center"
-                                         Margin="0,0,12,0"/>
-                            <TextBlock Text="Moderation" Foreground="#cdd6f4"
-                                       FontSize="14" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListBoxItem>
-                </ListBox>
+                            <ListBoxItem Tag="Settings" Style="{StaticResource SidebarNavItemStyle}"
+                                         Visibility="{Binding CanViewSettings, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <md:PackIcon Kind="CogOutline" Width="18" Height="18"
+                                                 Foreground="{DynamicResource AccentBrush}"
+                                                 VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                    <TextBlock Text="Settings"
+                                               Foreground="{DynamicResource TextPrimaryBrush}"
+                                               FontSize="13" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </ListBoxItem>
+
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+
             </DockPanel>
         </Border>
 
-        <!-- Main Content Area -->
+        <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="56"/>
+                <RowDefinition Height="52"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Top Bar -->
-            <Border Grid.Row="0" Background="#181825"
-                    BorderThickness="0,0,0,1" BorderBrush="#313244">
-                <Grid Margin="20,0">
+            <!-- Top bar -->
+            <Border Grid.Row="0"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{DynamicResource SubtleBorderBrush}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#1a1a2a" Offset="0"/>
+                        <GradientStop Color="#181825" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Grid Margin="24,0">
                     <TextBlock Text="{Binding CurrentViewTitle}"
-                               FontSize="18" FontWeight="SemiBold"
-                               Foreground="White"
+                               FontSize="16" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal"
                                 HorizontalAlignment="Right"
                                 VerticalAlignment="Center">
-                        <md:PackIcon Kind="Circle" Width="10" Height="10"
-                                     Foreground="#a6e3a1" VerticalAlignment="Center"
-                                     Margin="0,0,6,0"/>
+                        <Ellipse Width="7" Height="7"
+                                 Fill="{DynamicResource SuccessBrush}"
+                                 VerticalAlignment="Center"
+                                 Margin="0,0,7,0"/>
                         <TextBlock Text="{Binding ConnectedServer}"
-                                   FontSize="12" Foreground="#6c7086"
+                                   FontSize="12"
+                                   FontFamily="Consolas"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- Update Banner -->
+            <!-- Update banner -->
             <Border Grid.Row="1"
-                    Background="#313244"
-                    Padding="16,8"
+                    Background="{DynamicResource InfoBadgeBgBrush}"
+                    BorderThickness="0,0,0,1"
+                    BorderBrush="{DynamicResource AccentBrush}"
+                    Padding="20,8"
                     Visibility="{Binding UpdateAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
                 <Grid>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <md:PackIcon Kind="ArrowUpCircle" Width="16" Height="16"
-                                     Foreground="#a6e3a1" VerticalAlignment="Center"
-                                     Margin="0,0,8,0"/>
-                        <TextBlock VerticalAlignment="Center" FontSize="13" Foreground="#cdd6f4">
+                                     Foreground="{DynamicResource SuccessBrush}"
+                                     VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock VerticalAlignment="Center" FontSize="13"
+                                   Foreground="{DynamicResource TextPrimaryBrush}">
                             <Run Text="Version"/>
-                            <Run Text="{Binding LatestVersion, Mode=OneWay}" Foreground="#a6e3a1" FontWeight="SemiBold"/>
-                            <Run Text="is available"/>
+                            <Run Text="{Binding LatestVersion, Mode=OneWay}"
+                                 Foreground="{DynamicResource SuccessBrush}"
+                                 FontWeight="SemiBold"/>
+                            <Run Text="is available —"/>
                         </TextBlock>
                     </StackPanel>
                     <Button HorizontalAlignment="Right"
                             Command="{Binding OpenReleasePageCommand}"
                             Style="{StaticResource MaterialDesignFlatButton}"
-                            Foreground="#89b4fa"
+                            Foreground="{DynamicResource AccentBrush}"
                             FontSize="12">
                         Download update
                     </Button>
                 </Grid>
             </Border>
 
-            <!-- Content -->
+            <!-- Page content -->
             <ContentControl Grid.Row="2"
                             x:Name="ContentArea"
-                            Background="#1e1e2e"/>
+                            Background="{DynamicResource AppBackgroundBrush}">
+                <ContentControl.Triggers>
+                    <EventTrigger RoutedEvent="Loaded">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                 From="0" To="1" Duration="0:0:0.18">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </ContentControl.Triggers>
+            </ContentControl>
         </Grid>
     </Grid>
 </UserControl>

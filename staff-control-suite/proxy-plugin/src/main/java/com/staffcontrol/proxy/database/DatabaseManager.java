@@ -235,6 +235,7 @@ public class DatabaseManager {
                     active INTEGER DEFAULT 1,
                     revoked_at INTEGER DEFAULT 0,
                     revoked_by_user_id INTEGER DEFAULT 0,
+                    revoked_by_username TEXT DEFAULT '',
                     revoke_reason TEXT DEFAULT ''
                 )""");
         } catch (SQLException ignored) {}

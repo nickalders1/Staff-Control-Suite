@@ -3,29 +3,62 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:StaffControlSuite.Converters"
-             Background="#1e1e2e">
+             xmlns:vm="clr-namespace:StaffControlSuite.ViewModels"
+             Background="{DynamicResource AppBackgroundBrush}">
 
     <UserControl.Resources>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter"/>
+        <converters:BoolToVisibilityConverter       x:Key="BoolToVisibilityConverter"/>
+        <converters:InvertedBoolConverter           x:Key="InvertedBoolConverter"/>
+        <converters:InvertedBoolToVisibilityConverter x:Key="InvertedBoolToVisibilityConverter"/>
+
+        <!-- Template for a single color entry row (label as hint + textbox + swatch) -->
+        <DataTemplate x:Key="ColorEntryTemplate" DataType="{x:Type vm:ThemeColorEntry}">
+            <Grid Margin="0,0,8,10" Width="272">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="6"/>
+                    <ColumnDefinition Width="36"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Grid.Column="0"
+                         Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
+                         md:HintAssist.Hint="{Binding Label}"
+                         FontFamily="Consolas" FontSize="12"
+                         Foreground="White"
+                         VerticalAlignment="Center">
+                    <TextBox.Style>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsValid}" Value="False">
+                                    <Setter Property="BorderBrush" Value="#f38ba8"/>
+                                    <Setter Property="md:TextFieldAssist.UnderlineBrush" Value="#f38ba8"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBox.Style>
+                </TextBox>
+                <Border Grid.Column="2" Width="36" Height="36" CornerRadius="6"
+                        Background="{Binding Swatch}"
+                        BorderThickness="1" BorderBrush="#45475a"
+                        VerticalAlignment="Center"/>
+            </Grid>
+        </DataTemplate>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="24" MaxWidth="640">
+        <StackPanel Margin="24" MaxWidth="660">
 
-            <!-- Connection Settings -->
-            <md:Card Padding="24" Background="#313244" Margin="0,0,0,16">
+            <!-- ── CONNECTION ─────────────────────────────────────── -->
+            <md:Card Padding="24" Background="{DynamicResource CardBgBrush}" Margin="0,0,0,16">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <md:PackIcon Kind="Connection" Width="20" Height="20"
-                                     Foreground="#89b4fa" VerticalAlignment="Center"
-                                     Margin="0,0,10,0"/>
-                        <TextBlock Text="Connection Settings"
-                                   FontSize="16" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource AccentBrush}"
+                                     VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock Text="Connection" FontSize="16" FontWeight="SemiBold"
                                    Foreground="White" VerticalAlignment="Center"/>
                     </StackPanel>
 
-                    <Grid Margin="0,0,0,12">
+                    <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="12"/>
@@ -43,64 +76,52 @@
                                  Foreground="White"/>
                     </Grid>
 
-                    <TextBlock Text="{Binding SaveMessage}"
-                               Foreground="#a6e3a1" FontSize="12"
-                               Margin="0,0,0,12"
-                               Visibility="{Binding HasSaveMessage, Converter={StaticResource BoolToVisibilityConverter}}"/>
-
                     <Button Command="{Binding SaveConnectionCommand}"
                             Style="{StaticResource MaterialDesignRaisedButton}"
-                            Background="#89b4fa" Foreground="#1e1e2e"
+                            Background="{DynamicResource AccentBrush}" Foreground="#1e1e2e"
                             HorizontalAlignment="Left">
                         <StackPanel Orientation="Horizontal">
                             <md:PackIcon Kind="ContentSave" Width="16" Height="16"
                                          VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="Save Settings"/>
+                            <TextBlock Text="Save Connection"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>
             </md:Card>
 
-            <!-- Session Info -->
-            <md:Card Padding="24" Background="#313244" Margin="0,0,0,16">
+            <!-- ── SESSION ────────────────────────────────────────── -->
+            <md:Card Padding="24" Background="{DynamicResource CardBgBrush}" Margin="0,0,0,16">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <md:PackIcon Kind="Account" Width="20" Height="20"
-                                     Foreground="#89b4fa" VerticalAlignment="Center"
-                                     Margin="0,0,10,0"/>
-                        <TextBlock Text="Current Session"
-                                   FontSize="16" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource AccentBrush}"
+                                     VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock Text="Session" FontSize="16" FontWeight="SemiBold"
                                    Foreground="White" VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <Grid Margin="0,0,0,8">
-                        <TextBlock Text="Username" FontSize="12" Foreground="#6c7086"/>
-                        <TextBlock Text="{Binding Username}"
-                                   FontSize="12" Foreground="White" HorizontalAlignment="Right"/>
+                        <TextBlock Text="Username"  FontSize="12" Foreground="#6c7086"/>
+                        <TextBlock Text="{Binding Username}" FontSize="12" Foreground="White" HorizontalAlignment="Right"/>
                     </Grid>
-
                     <Grid Margin="0,0,0,8">
                         <TextBlock Text="Role" FontSize="12" Foreground="#6c7086"/>
-                        <TextBlock Text="{Binding UserRole}"
-                                   FontSize="12" Foreground="#cba6f7" HorizontalAlignment="Right"/>
+                        <TextBlock Text="{Binding UserRole}" FontSize="12" Foreground="{DynamicResource PurpleBrush}" HorizontalAlignment="Right"/>
                     </Grid>
-
                     <Grid Margin="0,0,0,8">
                         <TextBlock Text="Permissions" FontSize="12" Foreground="#6c7086"/>
-                        <TextBlock Text="{Binding PermissionCount}"
-                                   FontSize="12" Foreground="#cdd6f4" HorizontalAlignment="Right"/>
+                        <TextBlock Text="{Binding PermissionCount}" FontSize="12" Foreground="#cdd6f4" HorizontalAlignment="Right"/>
                     </Grid>
-
-                    <Grid Margin="0,0,0,16">
+                    <Grid Margin="0,0,0,20">
                         <TextBlock Text="Session Token" FontSize="12" Foreground="#6c7086"/>
-                        <TextBlock Text="{Binding MaskedToken}"
-                                   FontSize="12" Foreground="#45475a" HorizontalAlignment="Right"
-                                   FontFamily="Consolas"/>
+                        <TextBlock Text="{Binding MaskedToken}" FontSize="12"
+                                   Foreground="#45475a" HorizontalAlignment="Right" FontFamily="Consolas"/>
                     </Grid>
 
                     <Button Command="{Binding LogoutCommand}"
                             Style="{StaticResource MaterialDesignOutlinedButton}"
-                            Foreground="#f38ba8" BorderBrush="#f38ba8"
+                            Foreground="{DynamicResource DangerBrush}"
+                            BorderBrush="{DynamicResource DangerBrush}"
                             HorizontalAlignment="Left">
                         <StackPanel Orientation="Horizontal">
                             <md:PackIcon Kind="Logout" Width="16" Height="16"
@@ -111,130 +132,337 @@
                 </StackPanel>
             </md:Card>
 
-            <!-- Appearance Settings -->
-            <md:Card Padding="24" Background="#313244" Margin="0,0,0,16">
+            <!-- ── APPEARANCE ─────────────────────────────────────── -->
+            <md:Card Padding="24" Background="{DynamicResource CardBgBrush}" Margin="0,0,0,16">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
                         <md:PackIcon Kind="Palette" Width="20" Height="20"
-                                     Foreground="#89b4fa" VerticalAlignment="Center"
-                                     Margin="0,0,10,0"/>
-                        <TextBlock Text="Appearance"
-                                   FontSize="16" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource AccentBrush}"
+                                     VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <TextBlock Text="Appearance" FontSize="16" FontWeight="SemiBold"
                                    Foreground="White" VerticalAlignment="Center"/>
                     </StackPanel>
 
-                    <!-- App title -->
-                    <TextBlock Text="App title (sidebar heading)" FontSize="11"
-                               Foreground="#6c7086" Margin="0,0,0,4"/>
+                    <!-- Branding -->
+                    <TextBlock Text="BRANDING" Style="{StaticResource PageSectionHeaderStyle}"/>
+
+                    <TextBlock Text="App title" FontSize="11" Foreground="#6c7086" Margin="0,0,0,4"/>
                     <TextBox Text="{Binding AppSidebarTitle, UpdateSourceTrigger=PropertyChanged}"
-                             md:HintAssist.Hint="e.g. My Panel"
+                             md:HintAssist.Hint="e.g. Staff Panel"
                              Style="{StaticResource MaterialDesignOutlinedTextBox}"
                              Foreground="White" Margin="0,0,0,12"/>
 
-                    <!-- Network name -->
-                    <TextBlock Text="Network name (sidebar subtitle)" FontSize="11"
-                               Foreground="#6c7086" Margin="0,0,0,4"/>
+                    <TextBlock Text="Network subtitle" FontSize="11" Foreground="#6c7086" Margin="0,0,0,4"/>
                     <TextBox Text="{Binding AppSidebarSubtitle, UpdateSourceTrigger=PropertyChanged}"
                              md:HintAssist.Hint="e.g. My Network"
                              Style="{StaticResource MaterialDesignOutlinedTextBox}"
                              Foreground="White" Margin="0,0,0,12"/>
 
-                    <!-- Accent color (primary) -->
-                    <TextBlock Text="Primary accent color (hex)" FontSize="11"
-                               Foreground="#6c7086" Margin="0,0,0,4"/>
-                    <Grid Margin="0,0,0,4">
+                    <!-- Logo import -->
+                    <TextBlock Text="Sidebar Logo" FontSize="11" Foreground="#6c7086" Margin="0,0,0,8"/>
+                    <Grid Margin="0,0,0,20">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="8"/>
-                            <ColumnDefinition Width="36"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column="0"
-                                 Text="{Binding AppAccentColor, UpdateSourceTrigger=PropertyChanged}"
-                                 md:HintAssist.Hint="#89b4fa"
-                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                 Foreground="White" FontFamily="Consolas"/>
-                        <Border Grid.Column="2" CornerRadius="4" Width="36" Height="36"
-                                Background="{Binding AccentColorBrush}"
-                                VerticalAlignment="Center"/>
+
+                        <!-- Preview box -->
+                        <Border Grid.Column="0" Width="60" Height="60" CornerRadius="8"
+                                Background="{DynamicResource InputBgBrush}"
+                                BorderThickness="1" BorderBrush="{DynamicResource AppBorderBrush}"
+                                Margin="0,0,14,0">
+                            <Grid>
+                                <Image Source="{Binding LogoImagePath}"
+                                       Stretch="Uniform"
+                                       RenderOptions.BitmapScalingMode="HighQuality"
+                                       Margin="6"
+                                       Visibility="{Binding HasLogoPreview, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                <md:PackIcon Kind="ImageOutline" Width="28" Height="28"
+                                             Foreground="{DynamicResource TextMutedBrush}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                                             Visibility="{Binding HasLogoPreview, Converter={StaticResource InvertedBoolToVisibilityConverter}}"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Info + path -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding LogoImagePath, TargetNullValue='No logo set', FallbackValue='No logo set'}"
+                                       FontSize="11" FontFamily="Consolas"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding LogoImagePath}"
+                                       Margin="0,0,0,4"/>
+                            <TextBlock Text="Supported: PNG, JPG, JPEG  ·  Shown in sidebar and login"
+                                       FontSize="11" Foreground="{DynamicResource TextMutedBrush}"/>
+                        </StackPanel>
+
+                        <!-- Buttons -->
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="14,0,0,0">
+                            <Button Command="{Binding ImportLogoCommand}"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Foreground="{DynamicResource AccentBrush}"
+                                    BorderBrush="{DynamicResource AccentBrush}"
+                                    Margin="0,0,0,6">
+                                <StackPanel Orientation="Horizontal">
+                                    <md:PackIcon Kind="FolderOpen" Width="14" Height="14"
+                                                 VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock Text="Import Logo"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ClearLogoCommand}"
+                                    Style="{StaticResource MaterialDesignFlatButton}"
+                                    Foreground="{DynamicResource DangerBrush}"
+                                    Visibility="{Binding HasLogoPreview, Converter={StaticResource BoolToVisibilityConverter}}"
+                                    Padding="0,4">
+                                Clear Logo
+                            </Button>
+                        </StackPanel>
                     </Grid>
 
-                    <!-- Secondary accent color (gradient) -->
-                    <TextBlock Text="Secondary accent color — optional, enables gradient (hex)"
-                               FontSize="11" Foreground="#6c7086" Margin="0,0,0,4"/>
+                    <!-- Theme mode + compact -->
+                    <TextBlock Text="THEME" Style="{StaticResource PageSectionHeaderStyle}"/>
+
                     <Grid Margin="0,0,0,12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="8"/>
-                            <ColumnDefinition Width="36"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox Grid.Column="0"
-                                 Text="{Binding AppSecondaryAccentColor, UpdateSourceTrigger=PropertyChanged}"
-                                 md:HintAssist.Hint="Leave empty for solid accent"
-                                 md:TextFieldAssist.HasClearButton="True"
-                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                                 Foreground="White" FontFamily="Consolas"/>
-                        <Border Grid.Column="2" CornerRadius="4" Width="36" Height="36"
-                                Background="{Binding SecondaryAccentColorBrush}"
-                                VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Mode" FontSize="11" Foreground="#6c7086" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding ThemeModes}"
+                                      SelectedItem="{Binding AppThemeMode}"
+                                      Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                      Foreground="White"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,16,0,0">
+                            <CheckBox IsChecked="{Binding CompactMode}"
+                                      Content="Compact mode (next launch)"
+                                      Foreground="#cdd6f4"
+                                      Style="{StaticResource MaterialDesignCheckBox}"/>
+                        </StackPanel>
                     </Grid>
 
-                    <!-- Theme mode -->
-                    <TextBlock Text="Theme mode" FontSize="11"
-                               Foreground="#6c7086" Margin="0,0,0,4"/>
-                    <ComboBox ItemsSource="{Binding ThemeModes}"
-                              SelectedItem="{Binding AppThemeMode}"
-                              Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                              Foreground="White" Margin="0,0,0,12"/>
+                    <!-- Accent colors -->
+                    <TextBlock Text="ACCENT COLORS" Style="{StaticResource PageSectionHeaderStyle}"/>
 
-                    <!-- Compact mode -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                        <CheckBox IsChecked="{Binding CompactMode}"
-                                  Foreground="#cdd6f4"
-                                  Content="Compact mode (applies on next launch)"
-                                  Style="{StaticResource MaterialDesignCheckBox}"/>
-                    </StackPanel>
+                    <Grid Margin="0,0,0,4">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                    <!-- Logo path (read-only display) -->
-                    <TextBlock Text="Logo file (from proxy branding)" FontSize="11"
-                               Foreground="#6c7086" Margin="0,0,0,4"/>
-                    <TextBlock Text="{Binding LogoImagePath, TargetNullValue='(not set)', FallbackValue='(not set)'}"
-                               FontSize="12" Foreground="#45475a" FontFamily="Consolas"
-                               TextTrimming="CharacterEllipsis"
-                               ToolTip="{Binding LogoImagePath}"
-                               Margin="0,0,0,16"/>
-
-                    <!-- Fetch from proxy -->
-                    <Button Command="{Binding FetchBrandingFromProxyCommand}"
-                            Style="{StaticResource MaterialDesignOutlinedButton}"
-                            Foreground="#cba6f7" BorderBrush="#cba6f7"
-                            HorizontalAlignment="Left"
-                            Margin="0,0,0,12"
-                            IsEnabled="{Binding IsFetchingBranding,
-                                Converter={StaticResource InvertedBoolConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="CloudDownload" Width="16" Height="16"
-                                         VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="Fetch branding from proxy"/>
+                        <!-- Primary accent -->
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Primary accent (hex)" FontSize="11" Foreground="#6c7086" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="36"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding AppAccentColor, UpdateSourceTrigger=PropertyChanged}"
+                                         md:HintAssist.Hint="#89b4fa"
+                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                         FontFamily="Consolas" Foreground="White"/>
+                                <Border Grid.Column="2" Width="36" Height="36" CornerRadius="6"
+                                        Background="{Binding AccentColorBrush}"
+                                        BorderThickness="1" BorderBrush="#45475a"
+                                        VerticalAlignment="Center"/>
+                            </Grid>
                         </StackPanel>
-                    </Button>
+
+                        <!-- Secondary accent (gradient) -->
+                        <StackPanel Grid.Column="2"
+                                    Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <TextBlock Text="Secondary accent (hex)" FontSize="11" Foreground="#6c7086" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="36"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding AppSecondaryAccentColor, UpdateSourceTrigger=PropertyChanged}"
+                                         md:HintAssist.Hint="#cba6f7"
+                                         md:TextFieldAssist.HasClearButton="True"
+                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                         FontFamily="Consolas" Foreground="White"/>
+                                <Border Grid.Column="2" Width="36" Height="36" CornerRadius="6"
+                                        Background="{Binding SecondaryAccentColorBrush}"
+                                        BorderThickness="1" BorderBrush="#45475a"
+                                        VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Gradient settings -->
+                    <Border Background="#252535" CornerRadius="6" Padding="16" Margin="0,0,0,20">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <CheckBox IsChecked="{Binding GradientEnabled}"
+                                          Content="Enable gradient accent"
+                                          Foreground="#cdd6f4"
+                                          Style="{StaticResource MaterialDesignCheckBox}"
+                                          Margin="0,0,16,0"/>
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding GradientEnabled, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="Gradient direction" FontSize="11" Foreground="#6c7086" Margin="0,0,0,4"/>
+                                <ComboBox ItemsSource="{Binding GradientDirections}"
+                                          SelectedItem="{Binding GradientDirection}"
+                                          Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                          Foreground="White" Width="200"
+                                          HorizontalAlignment="Left"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ── DEEP COLOR CUSTOMIZATION (owner / settings.manage only) ── -->
+                    <StackPanel Visibility="{Binding CanCustomizeTheme, Converter={StaticResource BoolToVisibilityConverter}}">
+
+                        <Separator Background="#313244" Margin="0,4,0,20"/>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                            <md:PackIcon Kind="FormatPaint" Width="18" Height="18"
+                                         Foreground="{DynamicResource PurpleBrush}"
+                                         VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Deep Color Customization" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="White" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Backgrounds -->
+                        <TextBlock Text="BACKGROUNDS" Style="{StaticResource PageSectionHeaderStyle}"/>
+                        <ItemsControl ItemsSource="{Binding BackgroundColors}"
+                                      ItemTemplate="{StaticResource ColorEntryTemplate}"
+                                      Margin="0,0,0,8">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+
+                        <!-- Text -->
+                        <TextBlock Text="TEXT" Style="{StaticResource PageSectionHeaderStyle}"/>
+                        <ItemsControl ItemsSource="{Binding TextColors}"
+                                      ItemTemplate="{StaticResource ColorEntryTemplate}"
+                                      Margin="0,0,0,8">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+
+                        <!-- Status -->
+                        <TextBlock Text="STATUS" Style="{StaticResource PageSectionHeaderStyle}"/>
+                        <ItemsControl ItemsSource="{Binding StatusColors}"
+                                      ItemTemplate="{StaticResource ColorEntryTemplate}"
+                                      Margin="0,0,0,8">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+
+                        <!-- Live preview -->
+                        <TextBlock Text="PREVIEW" Style="{StaticResource PageSectionHeaderStyle}"/>
+                        <Border CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{Binding BackgroundColors[7].Swatch}"
+                                Height="110" Margin="0,0,0,20" ClipToBounds="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Mini sidebar -->
+                                <Border Grid.Column="0"
+                                        Background="{Binding BackgroundColors[1].Swatch}">
+                                    <StackPanel Margin="10,14">
+                                        <Border Height="6" CornerRadius="3" Margin="0,0,0,6"
+                                                Background="{Binding AccentColorBrush}" Width="48" HorizontalAlignment="Left"/>
+                                        <Border Height="5" CornerRadius="3" Margin="0,0,0,5"
+                                                Background="{Binding BackgroundColors[7].Swatch}" Width="40" HorizontalAlignment="Left"/>
+                                        <Border Height="5" CornerRadius="3" Margin="0,0,0,5"
+                                                Background="{Binding BackgroundColors[7].Swatch}" Width="44" HorizontalAlignment="Left"/>
+                                        <Border Height="5" CornerRadius="3"
+                                                Background="{Binding BackgroundColors[7].Swatch}" Width="36" HorizontalAlignment="Left"/>
+                                    </StackPanel>
+                                </Border>
+                                <!-- Mini content -->
+                                <Border Grid.Column="1"
+                                        Background="{Binding BackgroundColors[0].Swatch}">
+                                    <StackPanel Margin="12,14">
+                                        <Border Height="20" CornerRadius="4" Margin="0,0,0,8"
+                                                Background="{Binding BackgroundColors[2].Swatch}">
+                                            <StackPanel Orientation="Horizontal" Margin="8,4">
+                                                <Border Width="8" Height="8" CornerRadius="4" Margin="0,0,6,0"
+                                                        Background="{Binding StatusColors[0].Swatch}"/>
+                                                <Border Width="30" Height="6" CornerRadius="3"
+                                                        Background="{Binding TextColors[0].Swatch}"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <StackPanel Orientation="Horizontal">
+                                            <Border Width="8" Height="8" CornerRadius="4" Margin="0,0,6,0"
+                                                    Background="{Binding StatusColors[2].Swatch}"/>
+                                            <Border Width="8" Height="8" CornerRadius="4" Margin="0,0,6,0"
+                                                    Background="{Binding StatusColors[1].Swatch}"/>
+                                            <Border Width="8" Height="8" CornerRadius="4"
+                                                    Background="{Binding StatusColors[3].Swatch}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                    </StackPanel>
 
                     <!-- Feedback -->
                     <TextBlock Text="{Binding SaveMessage}"
-                               Foreground="#a6e3a1" FontSize="12"
+                               Foreground="{DynamicResource SuccessBrush}" FontSize="12"
                                Margin="0,0,0,12"
                                Visibility="{Binding HasSaveMessage, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
-                    <!-- Save appearance -->
-                    <Button Command="{Binding SaveAppearanceCommand}"
-                            Style="{StaticResource MaterialDesignRaisedButton}"
-                            Background="#89b4fa" Foreground="#1e1e2e"
-                            HorizontalAlignment="Left">
-                        <StackPanel Orientation="Horizontal">
-                            <md:PackIcon Kind="ContentSave" Width="16" Height="16"
-                                         VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="Save Appearance"/>
-                        </StackPanel>
-                    </Button>
+                    <!-- Action buttons -->
+                    <StackPanel Orientation="Horizontal">
+                        <Button Command="{Binding SaveAppearanceCommand}"
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Background="{DynamicResource AccentBrush}" Foreground="#1e1e2e"
+                                Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="ContentSave" Width="16" Height="16"
+                                             VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Save Appearance"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding ResetAppearanceCommand}"
+                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                Foreground="#6c7086" BorderBrush="#6c7086"
+                                Margin="0,0,10,0">
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="Restore" Width="16" Height="16"
+                                             VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Reset Defaults"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Command="{Binding FetchBrandingFromProxyCommand}"
+                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                Foreground="{DynamicResource PurpleBrush}"
+                                BorderBrush="{DynamicResource PurpleBrush}"
+                                IsEnabled="{Binding IsFetchingBranding, Converter={StaticResource InvertedBoolConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <md:PackIcon Kind="CloudDownload" Width="16" Height="16"
+                                             VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Fetch from Proxy"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </StackPanel>
             </md:Card>
 

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -18,6 +19,10 @@ public partial class LoginViewModel : ObservableObject
     [ObservableProperty] private string _username = "";
     [ObservableProperty] private string _password = "";
     [ObservableProperty] private bool _isLoading = false;
+
+    public string LogoImagePath => AppSettings.Current.LogoImagePath ?? "";
+    public bool HasLogo => !string.IsNullOrEmpty(AppSettings.Current.LogoImagePath) &&
+                           File.Exists(AppSettings.Current.LogoImagePath);
 
     public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
 

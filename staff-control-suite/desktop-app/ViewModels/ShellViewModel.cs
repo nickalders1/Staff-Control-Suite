@@ -13,11 +13,18 @@ public partial class ShellViewModel : ObservableObject
     [ObservableProperty] private string _sidebarTitle    = "Staff Control";
     [ObservableProperty] private string _sidebarSubtitle = "";
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLogo))]
+    private string _logoImagePath = "";
+
     [ObservableProperty] private bool   _updateAvailable  = false;
     [ObservableProperty] private string _latestVersion    = "";
     [ObservableProperty] private string _releaseUrl       = "";
 
     public string CurrentVersion => UpdateCheckService.GetCurrentVersion();
+
+    public bool HasLogo => !string.IsNullOrEmpty(LogoImagePath) &&
+                           System.IO.File.Exists(LogoImagePath);
 
     public string Username      => App.AuthService.CurrentUser?.Username ?? "Unknown";
     public string UserRole      => App.AuthService.CurrentUser?.RoleName ?? "";
@@ -76,6 +83,8 @@ public partial class ShellViewModel : ObservableObject
         SidebarSubtitle = string.IsNullOrWhiteSpace(AppSettings.Current.SidebarSubtitle)
             ? ConnectedServer
             : AppSettings.Current.SidebarSubtitle;
+
+        LogoImagePath = AppSettings.Current.LogoImagePath ?? "";
     }
 
     [RelayCommand]

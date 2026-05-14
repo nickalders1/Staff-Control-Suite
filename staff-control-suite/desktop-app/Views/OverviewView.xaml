@@ -3,18 +3,31 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:StaffControlSuite.Converters"
-             Background="#1e1e2e">
+             Background="{DynamicResource AppBackgroundBrush}">
 
     <UserControl.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
         <converters:StatusToColorConverter x:Key="StatusToColorConverter"/>
     </UserControl.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="24">
+    <UserControl.Triggers>
+        <EventTrigger RoutedEvent="Loaded">
+            <BeginStoryboard Storyboard="{StaticResource PageFadeIn}"/>
+        </EventTrigger>
+    </UserControl.Triggers>
 
-            <!-- Stats Row -->
-            <Grid Margin="0,0,0,24">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28">
+
+            <!-- Page header -->
+            <StackPanel Margin="0,0,0,24">
+                <TextBlock Text="Network Overview" Style="{StaticResource PageTitleStyle}"/>
+                <TextBlock Text="Real-time status across all connected servers"
+                           Style="{StaticResource PageSubtitleStyle}"/>
+            </StackPanel>
+
+            <!-- ── Stat cards ────────────────────────────────────── -->
+            <Grid Margin="0,0,0,28">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="16"/>
@@ -26,189 +39,235 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Total Servers -->
-                <md:Card Grid.Column="0" Padding="20" Background="#313244">
+                <Border Grid.Column="0" Style="{StaticResource StatCardStyle}">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <md:PackIcon Kind="Server" Width="20" Height="20"
-                                         Foreground="#89b4fa" VerticalAlignment="Center"
-                                         Margin="0,0,8,0"/>
-                            <TextBlock Text="Total Servers" Foreground="#6c7086" FontSize="13"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource InfoBadgeBgBrush}" Margin="0,0,12,0">
+                                <md:PackIcon Kind="Server" Width="18" Height="18"
+                                             Foreground="{DynamicResource AccentBrush}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="Total Servers" Style="{StaticResource StatLabelStyle}" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="{Binding TotalServers}" FontSize="32"
-                                   FontWeight="Bold" Foreground="White"/>
+                        <TextBlock Text="{Binding TotalServers}" Style="{StaticResource StatValueStyle}"
+                                   Foreground="{DynamicResource AccentBrush}"/>
                     </StackPanel>
-                </md:Card>
+                </Border>
 
                 <!-- Online Servers -->
-                <md:Card Grid.Column="2" Padding="20" Background="#313244">
+                <Border Grid.Column="2" Style="{StaticResource SuccessStatCardStyle}">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <md:PackIcon Kind="CheckCircle" Width="20" Height="20"
-                                         Foreground="#a6e3a1" VerticalAlignment="Center"
-                                         Margin="0,0,8,0"/>
-                            <TextBlock Text="Online Servers" Foreground="#6c7086" FontSize="13"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource SuccessBadgeBgBrush}" Margin="0,0,12,0">
+                                <md:PackIcon Kind="CheckCircle" Width="18" Height="18"
+                                             Foreground="{DynamicResource SuccessBrush}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="Online" Style="{StaticResource StatLabelStyle}" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="{Binding OnlineServers}" FontSize="32"
-                                   FontWeight="Bold" Foreground="#a6e3a1"/>
+                        <TextBlock Text="{Binding OnlineServers}" Style="{StaticResource StatValueStyle}"
+                                   Foreground="{DynamicResource SuccessBrush}"/>
                     </StackPanel>
-                </md:Card>
+                </Border>
 
-                <!-- Total Players -->
-                <md:Card Grid.Column="4" Padding="20" Background="#313244">
+                <!-- Online Players -->
+                <Border Grid.Column="4" Style="{StaticResource PurpleStatCardStyle}">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <md:PackIcon Kind="AccountGroup" Width="20" Height="20"
-                                         Foreground="#cba6f7" VerticalAlignment="Center"
-                                         Margin="0,0,8,0"/>
-                            <TextBlock Text="Online Players" Foreground="#6c7086" FontSize="13"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource PurpleBadgeBgBrush}" Margin="0,0,12,0">
+                                <md:PackIcon Kind="AccountGroup" Width="18" Height="18"
+                                             Foreground="{DynamicResource PurpleBrush}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="Online Players" Style="{StaticResource StatLabelStyle}" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="{Binding TotalPlayers}" FontSize="32"
-                                   FontWeight="Bold" Foreground="#cba6f7"/>
+                        <TextBlock Text="{Binding TotalPlayers}" Style="{StaticResource StatValueStyle}"
+                                   Foreground="{DynamicResource PurpleBrush}"/>
                     </StackPanel>
-                </md:Card>
+                </Border>
 
                 <!-- Avg TPS -->
-                <md:Card Grid.Column="6" Padding="20" Background="#313244">
+                <Border Grid.Column="6" Style="{StaticResource WarningStatCardStyle}">
                     <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                            <md:PackIcon Kind="Speedometer" Width="20" Height="20"
-                                         Foreground="#f9e2af" VerticalAlignment="Center"
-                                         Margin="0,0,8,0"/>
-                            <TextBlock Text="Avg TPS" Foreground="#6c7086" FontSize="13"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource WarningBadgeBgBrush}" Margin="0,0,12,0">
+                                <md:PackIcon Kind="Speedometer" Width="18" Height="18"
+                                             Foreground="{DynamicResource WarningBrush}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="Avg TPS" Style="{StaticResource StatLabelStyle}" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <TextBlock Text="{Binding AverageTps, StringFormat={}{0:F1}}" FontSize="32"
-                                   FontWeight="Bold" Foreground="#f9e2af"/>
+                        <TextBlock Text="{Binding AverageTps, StringFormat={}{0:F1}}" Style="{StaticResource StatValueStyle}"
+                                   Foreground="{DynamicResource WarningBrush}"/>
                     </StackPanel>
-                </md:Card>
+                </Border>
             </Grid>
 
-            <!-- Content Row -->
+            <!-- ── Content row ────────────────────────────────────── -->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="20"/>
-                    <ColumnDefinition Width="360"/>
+                    <ColumnDefinition Width="340"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Servers List -->
+                <!-- Servers list -->
                 <StackPanel Grid.Column="0">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                        <TextBlock Text="Servers" FontSize="16" FontWeight="SemiBold"
-                                   Foreground="White" VerticalAlignment="Center"/>
-                        <Button Command="{Binding LoadCommand}"
-                                Style="{StaticResource MaterialDesignIconButton}"
-                                Foreground="#89b4fa"
-                                ToolTip="Refresh"
-                                Margin="8,0,0,0">
-                            <md:PackIcon Kind="Refresh" Width="18" Height="18"/>
-                        </Button>
-                        <ProgressBar IsIndeterminate="True"
-                                     Width="60" Height="4"
-                                     Margin="8,0,0,0"
-                                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
-                                     Foreground="#89b4fa"/>
-                    </StackPanel>
+                    <Grid Margin="0,0,0,14">
+                        <TextBlock Text="Servers" Style="{StaticResource SectionTitleStyle}" Margin="0"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Button Command="{Binding LoadCommand}"
+                                    Style="{StaticResource MaterialDesignIconButton}"
+                                    Foreground="{DynamicResource AccentBrush}"
+                                    ToolTip="Refresh" Width="28" Height="28">
+                                <md:PackIcon Kind="Refresh" Width="16" Height="16"/>
+                            </Button>
+                            <ProgressBar IsIndeterminate="True" Width="50" Height="3"
+                                         Margin="8,0,0,0" VerticalAlignment="Center"
+                                         Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                                         Foreground="{DynamicResource AccentBrush}"/>
+                        </StackPanel>
+                    </Grid>
 
                     <ItemsControl ItemsSource="{Binding Servers}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <md:Card Margin="0,0,0,8" Padding="16" Background="#313244">
+                                <Border Style="{StaticResource ContentCardStyle}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="80"/>
+                                            <ColumnDefinition Width="70"/>
+                                            <ColumnDefinition Width="70"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- Status Dot -->
-                                        <Ellipse Grid.Column="0"
-                                                 Width="10" Height="10"
+                                        <!-- Status dot -->
+                                        <Ellipse Grid.Column="0" Width="9" Height="9"
                                                  Fill="{Binding IsOnline, Converter={StaticResource StatusToColorConverter}}"
-                                                 VerticalAlignment="Center"
-                                                 Margin="0,0,12,0"/>
+                                                 VerticalAlignment="Center" Margin="0,0,14,0"/>
 
-                                        <!-- Name -->
+                                        <!-- Name + ID -->
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding ServerName}"
-                                                       FontSize="14" FontWeight="Medium"
-                                                       Foreground="White"/>
+                                                       FontSize="13" FontWeight="Medium"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"/>
                                             <TextBlock Text="{Binding ServerId}"
-                                                       FontSize="11" Foreground="#6c7086"/>
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         </StackPanel>
 
                                         <!-- Players -->
                                         <StackPanel Grid.Column="2" VerticalAlignment="Center"
-                                                    Margin="0,0,16,0" HorizontalAlignment="Right">
+                                                    Margin="0,0,20,0" HorizontalAlignment="Right">
                                             <TextBlock Text="{Binding PlayerDisplay}"
-                                                       FontSize="13" Foreground="#cdd6f4"
+                                                       FontSize="14" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                                        HorizontalAlignment="Right"/>
-                                            <TextBlock Text="players" FontSize="11"
-                                                       Foreground="#6c7086" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="players" FontSize="10"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       HorizontalAlignment="Right"/>
                                         </StackPanel>
 
                                         <!-- TPS -->
                                         <StackPanel Grid.Column="3" VerticalAlignment="Center"
                                                     HorizontalAlignment="Right" Margin="0,0,16,0">
                                             <TextBlock Text="{Binding TpsDisplay}"
-                                                       FontSize="13" Foreground="#f9e2af"
+                                                       FontSize="14" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource WarningBrush}"
                                                        HorizontalAlignment="Right"/>
-                                            <TextBlock Text="tps" FontSize="11"
-                                                       Foreground="#6c7086" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="tps" FontSize="10"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                                       HorizontalAlignment="Right"/>
                                         </StackPanel>
 
-                                        <!-- Status Badge -->
-                                        <TextBlock Grid.Column="4"
-                                                   Text="{Binding StatusDisplay}"
-                                                   FontSize="12" FontWeight="Medium"
-                                                   VerticalAlignment="Center"
-                                                   HorizontalAlignment="Right"
-                                                   Foreground="{Binding IsOnline, Converter={StaticResource StatusToColorConverter}}"/>
+                                        <!-- Status badge -->
+                                        <Border Grid.Column="4" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                            <Border.Style>
+                                                <Style TargetType="Border" BasedOn="{StaticResource PillBadgeStyle}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsOnline}" Value="True">
+                                                            <Setter Property="Background" Value="{DynamicResource SuccessBadgeBgBrush}"/>
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsOnline}" Value="False">
+                                                            <Setter Property="Background" Value="{DynamicResource DangerBadgeBgBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding StatusDisplay}"
+                                                       FontSize="11" FontWeight="SemiBold">
+                                                <TextBlock.Foreground>
+                                                    <Binding Path="IsOnline"
+                                                             Converter="{StaticResource StatusToColorConverter}"/>
+                                                </TextBlock.Foreground>
+                                            </TextBlock>
+                                        </Border>
                                     </Grid>
-                                </md:Card>
+                                </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <TextBlock Text="No servers configured."
-                               Foreground="#45475a" FontSize="13"
-                               HorizontalAlignment="Center" Margin="0,20"
-                               Visibility="{Binding NoServers, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                    <Border HorizontalAlignment="Center" Margin="0,24" VerticalAlignment="Center"
+                            Visibility="{Binding NoServers, Converter={StaticResource BoolToVisibilityConverter}}">
+                        <StackPanel HorizontalAlignment="Center">
+                            <md:PackIcon Kind="ServerOff" Width="40" Height="40"
+                                         Foreground="{DynamicResource TextMutedBrush}"
+                                         HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                            <TextBlock Text="No servers configured."
+                                       Style="{StaticResource EmptyStateTextStyle}"
+                                       Margin="0"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
 
-                <!-- Recent Activity -->
+                <!-- Recent Activity feed -->
                 <StackPanel Grid.Column="2">
-                    <TextBlock Text="Recent Activity" FontSize="16" FontWeight="SemiBold"
-                               Foreground="White" Margin="0,0,0,16"
+                    <TextBlock Text="Recent Activity" Style="{StaticResource SectionTitleStyle}"
                                Visibility="{Binding CanViewAudit, Converter={StaticResource BoolToVisibilityConverter}}"/>
 
                     <ItemsControl ItemsSource="{Binding RecentActivity}"
                                   Visibility="{Binding CanViewAudit, Converter={StaticResource BoolToVisibilityConverter}}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderThickness="0,0,0,1" BorderBrush="#313244" Padding="0,10">
-                                    <StackPanel>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="{Binding Username}"
-                                                       FontSize="13" FontWeight="Medium"
-                                                       Foreground="#89b4fa"/>
-                                            <TextBlock Text=" — " Foreground="#6c7086" FontSize="13"/>
-                                            <TextBlock Text="{Binding Action}"
-                                                       FontSize="13" Foreground="#cdd6f4"/>
+                                <Border Padding="0,10"
+                                        BorderThickness="0,0,0,1"
+                                        BorderBrush="{DynamicResource SubtleBorderBrush}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Ellipse Grid.Column="0"
+                                                 Width="6" Height="6"
+                                                 Fill="{DynamicResource AccentBrush}"
+                                                 VerticalAlignment="Top"
+                                                 Margin="0,5,10,0"/>
+                                        <StackPanel Grid.Column="1">
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                                <TextBlock Text="{Binding Username}"
+                                                           FontSize="12" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AccentBrush}"/>
+                                                <TextBlock Text=" · " Foreground="{DynamicResource TextMutedBrush}" FontSize="12"/>
+                                                <TextBlock Text="{Binding Action}"
+                                                           FontSize="12"
+                                                           Foreground="{DynamicResource TextPrimaryBrush}"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding TimestampDisplay}"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource TextMutedBrush}"/>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding TimestampDisplay}"
-                                                   FontSize="11" Foreground="#45475a"
-                                                   Margin="0,2,0,0"/>
-                                    </StackPanel>
+                                    </Grid>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
                     <TextBlock Text="No recent activity."
-                               Foreground="#45475a" FontSize="13"
-                               Margin="0,20"
+                               Style="{StaticResource EmptyStateTextStyle}"
+                               Margin="0,16"
                                Visibility="{Binding NoRecentActivity, Converter={StaticResource BoolToVisibilityConverter}}"/>
                 </StackPanel>
             </Grid>
